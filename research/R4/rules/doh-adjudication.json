@@ -1,0 +1,150 @@
+{
+  "$schema": "seal-rule-dsl/v1",
+  "id": "doh-adjudication",
+  "description": "Code edits from the DoH (Abu Dhabi) Claims and Adjudication Rules V2025.1: E&M follow-up, venipuncture/injection bundling, screening duplicates, and medically unlikely edits. SEAL's hospital is in Dubai; these Abu Dhabi rules are applied to its fictional insurers as an assumption, labelled with their source.",
+  "rules": [
+    {
+      "id": "DOH-EM-FOLLOWUP-7D",
+      "version": 1,
+      "title": "Established-patient visit within 7 days of the first visit",
+      "family": "PRCE",
+      "denialCode": "PRCE-006",
+      "denialCodeBasis": "inferred",
+      "payers": "*",
+      "target": { "activityType": 3, "codes": ["99211-99215"], "kind": "visit" },
+      "when": { "op": "priorActivityWithin", "codes": ["99202-99215"], "days": 7, "sameSpecialty": true },
+      "stages": ["claim"],
+      "severity": "medium",
+      "insurerNeeds": "A follow-up visit within one week (same patient, specialty and facility) is billed with an established-patient code at zero value.",
+      "fixTemplates": [],
+      "fixActions": ["remove_line"],
+      "source": {
+        "title": "DoH Claims and Adjudication Rules",
+        "publisher": "Department of Health — Abu Dhabi (DoH)",
+        "version": "V2025.1",
+        "section": "4.2.1.3 E & M Services Not Separately Reimbursable",
+        "url": "https://www.doh.gov.ae/-/media/Feature/shafifya/Prices/Adjudication-Rules/DOH-Claims-and-Adjudication-Rules-V20251.ashx",
+        "quote": "Established patient, office outpatient visit occurring within 7 days from the initial New/established patient, office or other outpatient visit. … shall be billed using E&M code of an established patient codes 99211 to 99215 at \"0\" value."
+      },
+      "verified": true,
+      "notes": "DoH gives no denial code; PRCE-006 (Consultation within free follow up period) is the closest listed code."
+    },
+    {
+      "id": "DOH-VENIPUNCTURE-INHOUSE",
+      "version": 1,
+      "title": "Venipuncture billed when the lab is in-house",
+      "family": "PRCE",
+      "denialCode": "PRCE-002",
+      "denialCodeBasis": "inferred",
+      "payers": "*",
+      "target": { "activityType": 3, "codes": ["36415"], "kind": "procedure" },
+      "when": { "op": "labPerformedInHouse" },
+      "stages": ["claim"],
+      "severity": "low",
+      "insurerNeeds": "Venipuncture is payable only when the sample is analysed at an external laboratory outside the facility or facility group.",
+      "fixTemplates": [],
+      "fixActions": ["remove_line"],
+      "source": {
+        "title": "DoH Claims and Adjudication Rules",
+        "publisher": "Department of Health — Abu Dhabi (DoH)",
+        "version": "V2025.1",
+        "section": "4.2.1.7 Venipuncture and Injection Procedures",
+        "url": "https://www.doh.gov.ae/-/media/Feature/shafifya/Prices/Adjudication-Rules/DOH-Claims-and-Adjudication-Rules-V20251.ashx",
+        "quote": "Payment for venipuncture is only permitted when the analysis of the sample drawn is performed at an external laboratory outside the healthcare facility or healthcare facility group."
+      },
+      "verified": true,
+      "notes": "No code given; PRCE-002 (included in the allowance for another service) chosen."
+    },
+    {
+      "id": "DOH-VENIPUNCTURE-CONTRAST",
+      "version": 1,
+      "title": "Venipuncture or injection billed with IV-contrast imaging",
+      "family": "PRCE",
+      "denialCode": "PRCE-002",
+      "denialCodeBasis": "inferred",
+      "payers": "*",
+      "target": { "activityType": 3, "codes": ["36415", "96372-96379"], "kind": "procedure" },
+      "when": {
+        "op": "claimHasActivity",
+        "codes": [
+          "74400", "70460", "70470", "70487", "70488", "70491", "70492", "71260", "71270", "72126", "72127", "72129", "72130", "72132", "72133",
+          "72142", "72147", "72149", "72156-72158", "73201", "73202", "73222", "73223", "73701", "73702", "73722", "73723", "74160", "74170",
+          "74177", "74178", "74182", "74183"
+        ]
+      },
+      "stages": ["claim"],
+      "severity": "low",
+      "insurerNeeds": "Venipuncture and injection are incidental to imaging that uses intravenous contrast.",
+      "fixTemplates": [],
+      "fixActions": ["remove_line"],
+      "source": {
+        "title": "DoH Claims and Adjudication Rules",
+        "publisher": "Department of Health — Abu Dhabi (DoH)",
+        "version": "V2025.1",
+        "section": "4.2.1.7 Venipuncture and Injection Procedures",
+        "url": "https://www.doh.gov.ae/-/media/Feature/shafifya/Prices/Adjudication-Rules/DOH-Claims-and-Adjudication-Rules-V20251.ashx",
+        "quote": "Neither an injection procedure (96372-96379) nor a venipuncture (36415) should be reported with any diagnostic procedure code that involves the use of an intravenous contrast medium … These are considered incidental to the primary procedure."
+      },
+      "verified": true,
+      "notes": "The list of contrast imaging codes is SEAL's selection of 'with contrast' CPT codes for its specialties."
+    },
+    {
+      "id": "DOH-SCREENING-DUP-90D",
+      "version": 1,
+      "title": "Same screening test repeated within 90 days",
+      "family": "DUPL",
+      "denialCode": "DUPL-002",
+      "denialCodeBasis": "inferred",
+      "payers": "*",
+      "target": { "activityType": 3, "codes": ["80061", "83036", "82947", "85025", "80053", "80048", "84443", "82306", "81001", "86803", "87340"], "kind": "lab" },
+      "when": {
+        "op": "all",
+        "of": [
+          { "op": "hasDiagnosis", "codes": ["Z00*", "Z13*", "Z11*", "Z01.4*"], "principalOnly": true },
+          { "op": "priorActivityWithin", "codes": ["80061", "83036", "82947", "85025", "80053", "80048", "84443", "82306", "81001", "86803", "87340"], "days": 90 }
+        ]
+      },
+      "stages": ["point_of_care", "claim"],
+      "severity": "high",
+      "insurerNeeds": "The same screening test is not paid twice within 90 days.",
+      "fixTemplates": [],
+      "fixActions": ["remove_order"],
+      "source": {
+        "title": "DoH Claims and Adjudication Rules",
+        "publisher": "Department of Health — Abu Dhabi (DoH)",
+        "version": "V2025.1",
+        "section": "4.5.3 Comprehensive screening Codes",
+        "url": "https://www.doh.gov.ae/-/media/Feature/shafifya/Prices/Adjudication-Rules/DOH-Claims-and-Adjudication-Rules-V20251.ashx",
+        "quote": "In case of duplication of tests between IFHAS and other screening programs under Thiqa within a period of 90 days, the cost of that test will be subject to recovery."
+      },
+      "verified": true,
+      "notes": "DoH states this for IFHAS vs other Thiqa screening programmes and handles it by recovery. SEAL generalises it to any screening encounter and uses DUPL-002 (payment already made for same/similar service within set time frame) as the plan's S8 requires. The prior-activity check also matches the same code."
+    },
+    {
+      "id": "DOH-MUE",
+      "version": 1,
+      "title": "Units above the medically unlikely edit",
+      "family": "MNEC",
+      "denialCode": "MNEC-005",
+      "denialCodeBasis": "inferred",
+      "payers": "*",
+      "target": { "activityType": 3, "codes": ["44970"], "kind": "procedure" },
+      "when": { "op": "quantityExceeds", "max": 1 },
+      "stages": ["point_of_care", "claim"],
+      "severity": "high",
+      "insurerNeeds": "No more units on one date of service than the code's medically unlikely edit allows.",
+      "fixTemplates": [],
+      "fixActions": ["adjust_quantity"],
+      "source": {
+        "title": "DoH Claims and Adjudication Rules",
+        "publisher": "Department of Health — Abu Dhabi (DoH)",
+        "version": "V2025.1",
+        "section": "5.2 Medically Unlikely Edit (MUE)",
+        "url": "https://www.doh.gov.ae/-/media/Feature/shafifya/Prices/Adjudication-Rules/DOH-Claims-and-Adjudication-Rules-V20251.ashx",
+        "quote": "Medically Unlikely Edit (MUE), defines the maximum units of service that can be provided to a single beneficiary on a single date of service for a given HCPCS or CPT code … CPT 44970 … has an MUE of 1"
+      },
+      "verified": true,
+      "notes": "Only DoH's worked example is encoded. The full MUE table ships in the DoH Mandatory Tariff workbook (Tab MUE), not yet downloaded — see research/README.md open items. DoH also says insurers 'opt to utilize' MUEs by contract."
+    }
+  ]
+}

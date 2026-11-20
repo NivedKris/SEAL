@@ -1,0 +1,66 @@
+/** Fictional patient names by nationality. Combinations are random; no real people. */
+export const NATIONALITIES: { code: string; share: number; male: string[]; female: string[]; family: string[] }[] = [
+  {
+    code: "ARE",
+    share: 0.14,
+    male: ["Saeed", "Rashid", "Hamdan", "Majid", "Sultan", "Khalfan", "Obaid", "Humaid"],
+    female: ["Mozah", "Shamma", "Latifa", "Hind", "Maitha", "Alyazia", "Reem", "Afra"],
+    family: ["Al Ketbi", "Al Shamsi", "Al Nuaimi", "Al Marri", "Al Falasi", "Al Hammadi", "Al Zaabi", "Al Mazrouei"],
+  },
+  {
+    code: "IND",
+    share: 0.28,
+    male: ["Arjun", "Vikram", "Rahul", "Sanjay", "Anil", "Deepak", "Kiran", "Manoj"],
+    female: ["Anjali", "Priya", "Lakshmi", "Meera", "Divya", "Kavya", "Sunita", "Rekha"],
+    family: ["Menon", "Pillai", "Sharma", "Iyer", "Nair", "Reddy", "Patel", "Kapoor"],
+  },
+  {
+    code: "PAK",
+    share: 0.12,
+    male: ["Imran", "Bilal", "Usman", "Faisal", "Kamran", "Hamza"],
+    female: ["Ayesha", "Sana", "Hira", "Mehwish", "Zainab", "Saima"],
+    family: ["Qureshi", "Chaudhry", "Malik", "Siddiqui", "Butt", "Sheikh"],
+  },
+  {
+    code: "PHL",
+    share: 0.1,
+    male: ["Jose", "Mark", "Ramon", "Paolo", "Jerome", "Carlo"],
+    female: ["Maria", "Joy", "Kristine", "Angelica", "Liza", "Grace"],
+    family: ["Santos", "Reyes", "Cruz", "Bautista", "Garcia", "Mendoza"],
+  },
+  {
+    code: "EGY",
+    share: 0.1,
+    male: ["Mostafa", "Tarek", "Karim", "Amr", "Sherif", "Hany"],
+    female: ["Nour", "Yasmin", "Dina", "Rania", "Heba", "Mona"],
+    family: ["Abdelrahman", "Mansour", "Fahmy", "Soliman", "Hassan", "Ezzat"],
+  },
+  {
+    code: "JOR",
+    share: 0.08,
+    male: ["Zaid", "Laith", "Firas", "Ammar", "Rami"],
+    female: ["Lana", "Dana", "Ruba", "Tala", "Jumana"],
+    family: ["Haddadin", "Khoury", "Masri", "Nabulsi", "Tamimi"],
+  },
+  {
+    code: "GBR",
+    share: 0.08,
+    male: ["Oliver", "James", "Thomas", "Daniel", "Matthew"],
+    female: ["Emma", "Sophie", "Charlotte", "Hannah", "Lucy"],
+    family: ["Whitfield", "Ashworth", "Pemberton", "Holloway", "Granger"],
+  },
+  {
+    code: "LBN",
+    share: 0.06,
+    male: ["Georges", "Elie", "Nadim", "Fadi", "Rabih"],
+    female: ["Maya", "Rita", "Nadine", "Carla", "Joelle"],
+    family: ["Haddad", "Aoun", "Saade", "Karam", "Frem"],
+  },
+  {
+    code: "NGA",
+    share: 0.04,
+    male: ["Chinedu", "Tunde", "Emeka", "Femi"],
+    female: ["Ngozi", "Adaeze", "Folake", "Chioma"],
+    family: ["Okafor", "Adeyemi", "Nwosu", "Balogun"],
+  },
+];

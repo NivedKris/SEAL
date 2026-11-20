@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SEAL sample — DHA eClaimLink Claim.Submission (scenario S6, first submission).
+  All identifiers are fictional. Element names and formats: see research/R1/sources.md.
+  Root namespace/schemaLocation attributes are intentionally omitted (not confirmed from a primary source).
+-->
+<Claim.Submission>
+  <Header>
+    <SenderID>DHA-F-SEAL001</SenderID>
+    <ReceiverID>INS-FALCON</ReceiverID>
+    <TransactionDate>18/11/2026 21:40</TransactionDate>
+    <RecordCount>1</RecordCount>
+    <DispositionFlag>TEST</DispositionFlag>
+  </Header>
+  <Claim>
+    <ID>SSH-2026-004417</ID>
+    <MemberID>FH-0098812-01</MemberID>
+    <PayerID>INS-FALCON</PayerID>
+    <ProviderID>DHA-F-SEAL001</ProviderID>
+    <EmiratesIDNumber>111-1111-1111111-1</EmiratesIDNumber>
+    <Gross>2310.00</Gross>
+    <PatientShare>0.00</PatientShare>
+    <Net>2310.00</Net>
+    <Encounter>
+      <FacilityID>DHA-F-SEAL001</FacilityID>
+      <Type>2</Type>
+      <PatientID>MRN-00218841</PatientID>
+      <Start>18/11/2026 19:05</Start>
+      <End>18/11/2026 21:30</End>
+      <StartType>2</StartType>
+      <EndType>1</EndType>
+    </Encounter>
+    <Diagnosis>
+      <Type>Principal</Type>
+      <Code>R10.9</Code>
+    </Diagnosis>
+    <Activity>
+      <ID>1</ID>
+      <Start>18/11/2026 19:20</Start>
+      <Type>3</Type>
+      <Code>99284</Code>
+      <Quantity>1</Quantity>
+      <Net>460.00</Net>
+      <Clinician>DHA-P-SEAL0207</Clinician>
+    </Activity>
+    <Activity>
+      <ID>2</ID>
+      <Start>18/11/2026 20:10</Start>
+      <Type>3</Type>
+      <Code>74177</Code>
+      <Quantity>1</Quantity>
+      <Net>1700.00</Net>
+      <Clinician>DHA-P-SEAL0207</Clinician>
+      <PriorAuthorizationID>PA-FH-77120</PriorAuthorizationID>
+    </Activity>
+    <Activity>
+      <ID>3</ID>
+      <Start>18/11/2026 19:35</Start>
+      <Type>3</Type>
+      <Code>85025</Code>
+      <Quantity>1</Quantity>
+      <Net>150.00</Net>
+      <Clinician>DHA-P-SEAL0207</Clinician>
+    </Activity>
+  </Claim>
+</Claim.Submission>

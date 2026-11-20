@@ -1,0 +1,276 @@
+{
+  "$schema": "seal-rule-dsl/v1",
+  "id": "daman-diabetes-labs",
+  "description": "Diabetes laboratory frequency and medical-necessity rules from Daman's public guideline (ref 2013-MN-0012 v3.1). Applied to SEAL's fictional insurers.",
+  "rules": [
+    {
+      "id": "DAMAN-DM-HBA1C-FREQ",
+      "version": 1,
+      "title": "HbA1c repeated within 3 months",
+      "family": "MNEC",
+      "denialCode": "MNEC-005",
+      "denialCodeBasis": "stated",
+      "payers": "*",
+      "target": { "activityType": 3, "codes": ["83036"], "kind": "lab" },
+      "when": {
+        "op": "all",
+        "of": [
+          { "op": "priorActivityWithin", "codes": ["83036"], "days": 90 },
+          { "op": "not", "of": { "op": "documents", "concept": "reason_for_repeat_test" } }
+        ]
+      },
+      "stages": ["point_of_care", "claim"],
+      "severity": "high",
+      "insurerNeeds": "No HbA1c result in the past 3 months, or a documented reason to repeat it early.",
+      "fixTemplates": [
+        "HbA1c repeated before 3 months because ____ (last result ____ on ____).",
+        "Last HbA1c on ____ is not available to this clinic because ____."
+      ],
+      "fixActions": ["add_documentation", "remove_order"],
+      "source": {
+        "title": "Diabetes Mellitus Lab Tests Adjudication Guideline",
+        "publisher": "Daman (National Health Insurance Company)",
+        "ref": "2013-MN-0012",
+        "version": "3.1",
+        "revisionDate": "2025-11-10",
+        "section": "3.1 Table A; 4 Denial Codes",
+        "url": "https://www.damanhealth.ae/wp-content/uploads/2025/11/DM-lab-test_Adjudication-Guideline-External-Instruction-Template_V1R0.pdf",
+        "quote": "A1C, if the results are not available within the past 3 months — Every 3 months — Any diabetes. … MNEC-005 Service /supply may be appropriate, but too frequent"
+      },
+      "verified": true
+    },
+    {
+      "id": "DAMAN-DM-CPEPTIDE",
+      "version": 1,
+      "title": "C-peptide, insulin, proinsulin or insulin antibodies for diabetes",
+      "family": "MNEC",
+      "denialCode": "MNEC-004",
+      "denialCodeBasis": "stated",
+      "payers": "*",
+      "target": { "activityType": 3, "codes": ["84681", "83525", "84206", "86337", "86341"], "kind": "lab" },
+      "when": {
+        "op": "all",
+        "of": [
+          { "op": "hasDiagnosis", "codes": ["E10*", "E11*", "E13*", "O24*", "R73*"] },
+          { "op": "not", "of": { "op": "documents", "concept": "qualifying_diagnosis_documented" } }
+        ]
+      },
+      "stages": ["point_of_care", "claim"],
+      "severity": "high",
+      "insurerNeeds": "These tests are not considered medically necessary for screening, diagnosing or monitoring type 1, type 2 or gestational diabetes. A separate, documented indication outside diabetes care is needed.",
+      "fixTemplates": ["Test ordered for ____ (indication other than diabetes screening, diagnosis or monitoring)."],
+      "fixActions": ["remove_order", "add_documentation"],
+      "source": {
+        "title": "Diabetes Mellitus Lab Tests Adjudication Guideline",
+        "publisher": "Daman (National Health Insurance Company)",
+        "ref": "2013-MN-0012",
+        "version": "3.1",
+        "revisionDate": "2025-11-10",
+        "section": "3.3 Non-Coverage",
+        "url": "https://www.damanhealth.ae/wp-content/uploads/2025/11/DM-lab-test_Adjudication-Guideline-External-Instruction-Template_V1R0.pdf",
+        "quote": "the following tests are not considered medically necessary for the screening, diagnosis or monitoring of Type 1 DM, Type 2 DM and GDM: genetic markers, insulin, proinsulin, C-peptide and insulin antibodies."
+      },
+      "verified": true,
+      "notes": "Guideline lists MNEC-004 among its denial codes; the scenario S2 C-peptide line maps here."
+    },
+    {
+      "id": "DAMAN-DM-LIPID-FREQ",
+      "version": 1,
+      "title": "Lipid profile in diabetes more than once a year",
+      "family": "MNEC",
+      "denialCode": "MNEC-005",
+      "denialCodeBasis": "stated",
+      "payers": "*",
+      "target": { "activityType": 3, "codes": ["80061", "83721", "84478", "82465", "83718"], "kind": "lab" },
+      "when": {
+        "op": "all",
+        "of": [
+          { "op": "hasDiagnosis", "codes": ["E10*", "E11*", "E13*"] },
+          { "op": "priorActivityWithin", "codes": ["80061", "83721"], "days": 365 },
+          { "op": "not", "of": { "op": "documents", "concept": "medication_change" } }
+        ]
+      },
+      "stages": ["point_of_care", "claim"],
+      "severity": "medium",
+      "insurerNeeds": "Lipids are covered annually in diabetes, or after starting or changing diabetes, blood-pressure, cholesterol or thyroid medicines.",
+      "fixTemplates": ["Lipid profile repeated after ____ (medicine) was started / dose changed on ____."],
+      "fixActions": ["add_documentation", "remove_order"],
+      "source": {
+        "title": "Diabetes Mellitus Lab Tests Adjudication Guideline",
+        "publisher": "Daman (National Health Insurance Company)",
+        "ref": "2013-MN-0012",
+        "version": "3.1",
+        "revisionDate": "2025-11-10",
+        "section": "3.1 Table A",
+        "url": "https://www.damanhealth.ae/wp-content/uploads/2025/11/DM-lab-test_Adjudication-Guideline-External-Instruction-Template_V1R0.pdf",
+        "quote": "Lipid profile, including total, LDL, and HDL cholesterol and triglycerides — Annually (and after initiation/dose changes of diabetes medications, blood pressure medications, cholesterol medications, or thyroid medications)"
+      },
+      "verified": true
+    },
+    {
+      "id": "DAMAN-DM-UACR-FREQ",
+      "version": 1,
+      "title": "Urine albumin-to-creatinine ratio more than once a year",
+      "family": "MNEC",
+      "denialCode": "MNEC-005",
+      "denialCodeBasis": "stated",
+      "payers": "*",
+      "target": { "activityType": 3, "codes": ["82043"], "kind": "lab" },
+      "when": {
+        "op": "all",
+        "of": [
+          { "op": "hasDiagnosis", "codes": ["E10*", "E11*", "E13*"] },
+          { "op": "priorActivityWithin", "codes": ["82043"], "days": 365 },
+          { "op": "not", "of": { "op": "hasDiagnosis", "codes": ["N18*", "E11.2*", "E10.2*"] } }
+        ]
+      },
+      "stages": ["point_of_care", "claim"],
+      "severity": "medium",
+      "insurerNeeds": "Spot urine albumin-to-creatinine ratio is covered once a year in diabetes.",
+      "fixTemplates": ["Urine ACR repeated within the year because ____."],
+      "fixActions": ["add_documentation", "remove_order"],
+      "source": {
+        "title": "Diabetes Mellitus Lab Tests Adjudication Guideline",
+        "publisher": "Daman (National Health Insurance Company)",
+        "ref": "2013-MN-0012",
+        "version": "3.1",
+        "revisionDate": "2025-11-10",
+        "section": "3.1 Table A",
+        "url": "https://www.damanhealth.ae/wp-content/uploads/2025/11/DM-lab-test_Adjudication-Guideline-External-Instruction-Template_V1R0.pdf",
+        "quote": "Spot urinary albumin-to creatinine ratio — Annually — Any diabetes"
+      },
+      "verified": true,
+      "notes": "Exclusion for kidney-related diabetes codes is SEAL's reading of 'more frequently if with CKD' stated for serum creatinine; treat as an assumption."
+    },
+    {
+      "id": "DAMAN-DM-TSH-T2",
+      "version": 1,
+      "title": "Routine TSH in type 2 diabetes without a thyroid indication",
+      "family": "MNEC",
+      "denialCode": "MNEC-004",
+      "denialCodeBasis": "stated",
+      "payers": "*",
+      "target": { "activityType": 3, "codes": ["84443"], "kind": "lab" },
+      "when": {
+        "op": "all",
+        "of": [
+          { "op": "hasDiagnosis", "codes": ["E11*"], "principalOnly": true },
+          { "op": "not", "of": { "op": "hasDiagnosis", "codes": ["E10*", "E00*", "E01*", "E02*", "E03*", "E04*", "E05*", "E06*", "E07*", "R94.6"] } },
+          { "op": "not", "of": { "op": "documents", "concept": "signs_or_symptoms_present" } }
+        ]
+      },
+      "stages": ["point_of_care", "claim"],
+      "severity": "medium",
+      "insurerNeeds": "Annual TSH is listed for type 1 diabetes. In type 2 diabetes the note needs a thyroid sign, symptom or diagnosis.",
+      "fixTemplates": ["TSH ordered because of ____ (thyroid symptom/finding)."],
+      "fixActions": ["add_documentation", "link_diagnosis", "remove_order"],
+      "source": {
+        "title": "Diabetes Mellitus Lab Tests Adjudication Guideline",
+        "publisher": "Daman (National Health Insurance Company)",
+        "ref": "2013-MN-0012",
+        "version": "3.1",
+        "revisionDate": "2025-11-10",
+        "section": "3.1 Table A; 3.3 Non-Coverage",
+        "url": "https://www.damanhealth.ae/wp-content/uploads/2025/11/DM-lab-test_Adjudication-Guideline-External-Instruction-Template_V1R0.pdf",
+        "quote": "Thyroid-stimulating hormone in patients with type 1 diabetes — Annually … — DM Type 1. Daman does not cover investigations outside best practice recommendations."
+      },
+      "verified": true,
+      "notes": "The guideline lists TSH only for type 1; applying it as a refusal risk for type 2 is SEAL's reading of 'outside best practice'."
+    },
+    {
+      "id": "DAMAN-DM-B12-METFORMIN",
+      "version": 1,
+      "title": "Vitamin B12 on metformin without neurological signs",
+      "family": "MNEC",
+      "denialCode": "MNEC-004",
+      "denialCodeBasis": "stated",
+      "payers": "*",
+      "target": { "activityType": 3, "codes": ["82607"], "kind": "lab" },
+      "when": {
+        "op": "all",
+        "of": [
+          { "op": "hasDiagnosis", "codes": ["E11*"] },
+          { "op": "not", "of": { "op": "documents", "concept": "neuro_manifestations" } },
+          { "op": "not", "of": { "op": "hasDiagnosis", "codes": ["D51*", "D52*", "D53*", "G62*", "G63*", "E11.4*"] } }
+        ]
+      },
+      "stages": ["point_of_care", "claim"],
+      "severity": "medium",
+      "insurerNeeds": "B12 is covered on metformin when the patient has neurological manifestations and long-term use.",
+      "fixTemplates": ["On metformin since ____; neurological symptoms: ____."],
+      "fixActions": ["add_documentation", "remove_order"],
+      "source": {
+        "title": "Diabetes Mellitus Lab Tests Adjudication Guideline",
+        "publisher": "Daman (National Health Insurance Company)",
+        "ref": "2013-MN-0012",
+        "version": "3.1",
+        "revisionDate": "2025-11-10",
+        "section": "3.1 Table A",
+        "url": "https://www.damanhealth.ae/wp-content/uploads/2025/11/DM-lab-test_Adjudication-Guideline-External-Instruction-Template_V1R0.pdf",
+        "quote": "Vitamin B12 if on metformin (when indicated) — When indicated (if patient has neuro manifestations and long-term use)"
+      },
+      "verified": true
+    },
+    {
+      "id": "DAMAN-DM-HOME-A1C",
+      "version": 1,
+      "title": "HbA1c by home-use device",
+      "family": "NCOV",
+      "denialCode": "NCOV-003",
+      "denialCodeBasis": "stated",
+      "payers": "*",
+      "target": { "activityType": 3, "codes": ["83037"], "kind": "lab" },
+      "when": { "op": "all", "of": [{ "op": "hasDiagnosis", "codes": ["E10*", "E11*", "E13*", "O24*"] }] },
+      "stages": ["point_of_care", "claim"],
+      "severity": "high",
+      "insurerNeeds": "HbA1c by a device cleared for home use is not covered.",
+      "fixTemplates": [],
+      "fixActions": ["remove_order"],
+      "source": {
+        "title": "Diabetes Mellitus Lab Tests Adjudication Guideline",
+        "publisher": "Daman (National Health Insurance Company)",
+        "ref": "2013-MN-0012",
+        "version": "3.1",
+        "revisionDate": "2025-11-10",
+        "section": "3.3 Non-Coverage",
+        "url": "https://www.damanhealth.ae/wp-content/uploads/2025/11/DM-lab-test_Adjudication-Guideline-External-Instruction-Template_V1R0.pdf",
+        "quote": "CPT Haemoglobin: glycosylated (A1C) by device cleared by FDA for home use is not covered, as there is still insufficient evidence recommending its use."
+      },
+      "verified": true
+    },
+    {
+      "id": "DAMAN-DM-ASYMPTOMATIC",
+      "version": 1,
+      "title": "Diabetes tests for an asymptomatic patient without a screening benefit",
+      "family": "NCOV",
+      "denialCode": "NCOV-003",
+      "denialCodeBasis": "stated",
+      "payers": "*",
+      "target": { "activityType": 3, "codes": ["83036", "82947", "82950", "82951"], "kind": "lab" },
+      "when": {
+        "op": "all",
+        "of": [
+          { "op": "not", "of": { "op": "hasDiagnosis", "codes": ["E10*", "E11*", "E13*", "O24*", "R73*", "Z86.32", "E66*", "Z94*", "O09*", "Z33*", "Z34*"] } },
+          { "op": "not", "of": { "op": "documents", "concept": "signs_or_symptoms_present" } },
+          { "op": "benefitMissing", "benefit": "health_screening" }
+        ]
+      },
+      "stages": ["point_of_care", "claim"],
+      "severity": "high",
+      "insurerNeeds": "Symptoms suggesting diabetes (for example polyuria, polydipsia), a screening indication listed by the insurer, or a health-screening benefit on the plan.",
+      "fixTemplates": ["Patient reports ____ (symptom) for ____ (duration)."],
+      "fixActions": ["add_documentation", "link_diagnosis", "remove_order"],
+      "source": {
+        "title": "Diabetes Mellitus Lab Tests Adjudication Guideline",
+        "publisher": "Daman (National Health Insurance Company)",
+        "ref": "2013-MN-0012",
+        "version": "3.1",
+        "revisionDate": "2025-11-10",
+        "section": "3.1 Screening/Diagnosis; 3.3 Non-Coverage",
+        "url": "https://www.damanhealth.ae/wp-content/uploads/2025/11/DM-lab-test_Adjudication-Guideline-External-Instruction-Template_V1R0.pdf",
+        "quote": "Daman does not cover investigations for asymptomatic patients, unless recommended by the regulator or if with routine medical check-up benefit/ health screening benefit."
+      },
+      "verified": true
+    }
+  ]
+}

@@ -1,0 +1,138 @@
+{
+  "$schema": "seal-rule-dsl/v1",
+  "id": "vitamin-d-and-prior-auth",
+  "description": "Vitamin D testing coverage (DoH Abu Dhabi THIQA policy, corroborated by a Daman news report) and prior-approval rules. Applied to SEAL's fictional insurers.",
+  "rules": [
+    {
+      "id": "DOH-VITD-INDICATION",
+      "version": 1,
+      "title": "Vitamin D test without a qualifying condition",
+      "family": "MNEC",
+      "denialCode": "MNEC-004",
+      "denialCodeBasis": "inferred",
+      "payers": "*",
+      "target": { "activityType": 3, "codes": ["82306", "82652"], "kind": "lab" },
+      "when": {
+        "op": "all",
+        "of": [
+          {
+            "op": "not",
+            "of": {
+              "op": "hasDiagnosis",
+              "codes": [
+                "E55*", "E83.3*", "E83.5*", "M83*", "M80*", "M81*", "M85.8*", "N18*", "K72*", "E84*", "K50*", "K51*",
+                "K90*", "K52.0", "Z98.84", "K86.81", "K83.1", "E20*", "E21*", "G35*", "M32*", "M34*", "E66*", "Z79.52", "Z79.899"
+              ]
+            }
+          },
+          { "op": "not", "of": { "op": "patientAge", "gte": 65 } },
+          { "op": "not", "of": { "op": "documents", "concept": "qualifying_diagnosis_documented" } }
+        ]
+      },
+      "stages": ["point_of_care", "claim"],
+      "severity": "high",
+      "insurerNeeds": "A qualifying condition: bone disease (rickets, osteomalacia, osteopenia, osteoporosis), chronic kidney disease, liver failure, malabsorption, parathyroid or calcium/phosphate disorders, MS/SLE/systemic sclerosis, obesity, age over 65, or a listed medicine (anti-seizure, glucocorticoids, HIV medicines, ketoconazole-type antifungals, cholestyramine).",
+      "fixTemplates": ["Vitamin D tested because of ____ (qualifying condition or medicine)."],
+      "fixActions": ["link_diagnosis", "add_documentation", "remove_order"],
+      "source": {
+        "title": "THIQA Coverage Policy on Management of Vitamin D Deficiency",
+        "publisher": "Department of Health — Abu Dhabi (DoH)",
+        "ref": "DOH/Pol/CPL/1/2022",
+        "revisionDate": "2022-07",
+        "section": "7.1 Medical Necessity in Testing for Vitamin D deficiency",
+        "url": "https://www.doh.gov.ae/-/media/EAB3C65E8B614555870BA764A495C2C2.ashx",
+        "quote": "Testing for Vitamin D deficiency is considered medically necessary in patients with any of the following conditions or taking any of the listed medications categories: … Rickets; Osteomalacia; Osteopenia; Osteoporosis. Chronic kidney disease … Malabsorption syndromes"
+      },
+      "verified": true,
+      "notes": "The policy is written for THIQA (Abu Dhabi). Daman's own vitamin D guideline was not found; The National (undated) reports Daman limits cover to conditions such as osteoporosis, rickets and kidney disorders: https://www.thenationalnews.com/uae/health/uae-national-health-insurer-drops-tests-for-vitamin-d-deficiency-1.140148. The policy names no denial code; MNEC-004 chosen. Scenario S3."
+    },
+    {
+      "id": "DOH-VITD-RETEST",
+      "version": 1,
+      "title": "Vitamin D re-tested too soon or too often",
+      "family": "MNEC",
+      "denialCode": "MNEC-005",
+      "denialCodeBasis": "inferred",
+      "payers": "*",
+      "target": { "activityType": 3, "codes": ["82306"], "kind": "lab" },
+      "when": {
+        "op": "any",
+        "of": [
+          { "op": "priorActivityWithin", "codes": ["82306"], "days": 84 },
+          { "op": "countWithin", "codes": ["82306"], "days": 365, "max": 2 }
+        ]
+      },
+      "stages": ["point_of_care", "claim"],
+      "severity": "medium",
+      "insurerNeeds": "Re-test no sooner than 12 weeks after starting supplements, at most two tests a year until the therapeutic goal is reached, then annually.",
+      "fixTemplates": ["Supplementation started on ____; previous level ____ on ____."],
+      "fixActions": ["add_documentation", "remove_order"],
+      "source": {
+        "title": "THIQA Coverage Policy on Management of Vitamin D Deficiency",
+        "publisher": "Department of Health — Abu Dhabi (DoH)",
+        "ref": "DOH/Pol/CPL/1/2022",
+        "revisionDate": "2022-07",
+        "section": "7.2.3 Frequency for testing Vitamin D",
+        "url": "https://www.doh.gov.ae/-/media/EAB3C65E8B614555870BA764A495C2C2.ashx",
+        "quote": "A patient can be re-tested to be assessed for Vitamin D deficiency 12 weeks after the initiation of vitamin D supplementation therapy. A patient is limited to only two tests per year until the vitamin D supplementation therapy reaches its therapeutic goal."
+      },
+      "verified": true,
+      "notes": "Policy names no denial code; MNEC-005 (too frequent) chosen."
+    },
+    {
+      "id": "SEAL-PA-QUANTITY",
+      "version": 1,
+      "title": "Billed quantity above the prior-approved quantity",
+      "family": "AUTH",
+      "denialCode": "AUTH-005",
+      "denialCodeBasis": "stated",
+      "payers": "*",
+      "target": { "activityType": 3, "codes": ["97010-97799", "0101T", "0102T", "28890", "72141-72158", "72125-72133", "73718-73723", "73218-73223"], "kind": "therapy" },
+      "when": { "op": "quantityExceeds", "max": "priorAuthApproved" },
+      "stages": ["point_of_care", "claim"],
+      "severity": "high",
+      "insurerNeeds": "Billed quantity within what the prior approval covers, or an extension approved before the extra sessions.",
+      "fixTemplates": [],
+      "fixActions": ["adjust_quantity", "request_prior_auth"],
+      "source": {
+        "title": "MRI & CT Spine Adjudication Guideline — denial codes",
+        "publisher": "Daman (National Health Insurance Company)",
+        "ref": "2013-MN-0014",
+        "version": "4.1",
+        "revisionDate": "2025-12-12",
+        "section": "4 Denial Codes",
+        "url": "https://www.damanhealth.ae/wp-content/uploads/2026/01/MRI-CT-Spine-External-Guideline.pdf",
+        "quote": "AUTH-005 Claim information is inconsistent with pre-certified/authorized services"
+      },
+      "verified": true,
+      "notes": "The rule follows directly from the code's definition. Which services need prior approval is plan-specific and set in SEAL's fictional plan data (assumption). Scenario S4 (physiotherapy x6 against an approval for 4)."
+    },
+    {
+      "id": "SEAL-PA-MISSING",
+      "version": 1,
+      "title": "Prior approval required and not obtained",
+      "family": "AUTH",
+      "denialCode": "AUTH-001",
+      "denialCodeBasis": "stated",
+      "payers": "*",
+      "target": { "activityType": 3, "codes": ["97010-97799", "0101T", "0102T", "28890", "72141-72158", "72125-72133", "73718-73723", "73218-73223", "74176-74178"], "kind": "imaging" },
+      "when": { "op": "priorAuthMissing" },
+      "stages": ["point_of_care", "claim"],
+      "severity": "high",
+      "insurerNeeds": "A prior approval for this service. Under the Dubai claims directive (effective 16 Nov 2025) the provider requests it within 1 hour of the physician's order.",
+      "fixTemplates": [],
+      "fixActions": ["request_prior_auth"],
+      "source": {
+        "title": "Occupational Therapy Adjudication Guideline — denial codes; Dubai Health Insurance Claims Management Policy Directive (Al Tamimi summary)",
+        "publisher": "Daman; Al Tamimi & Company",
+        "ref": "2022-MN-066",
+        "version": "2.1",
+        "section": "4 Denial Codes",
+        "url": "https://www.damanhealth.ae/wp-content/uploads/2025/09/Occupational-Therapy-external-updated.pdf",
+        "quote": "AUTH-001 Prior approval is required and was not obtained"
+      },
+      "verified": false,
+      "notes": "Which codes need prior approval is an assumption for SEAL's fictional plans (no public Daman list found). The 1-hour timing is from https://www.tamimi.com/news/dubai-issues-comprehensive-overhaul-of-health-insurance-claims-management-framework/ (read via its Legal500 republication)."
+    }
+  ]
+}

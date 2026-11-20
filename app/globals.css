@@ -1,0 +1,262 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+/* ───────── SEAL design system: Apple-style black & white ───────── */
+:root {
+  --background: #ffffff;
+  --foreground: #1d1d1f;
+  --card: #ffffff;
+  --card-foreground: #1d1d1f;
+  --popover: #ffffff;
+  --popover-foreground: #1d1d1f;
+  --primary: #1d1d1f;
+  --primary-foreground: #ffffff;
+  --secondary: #f5f5f7;
+  --secondary-foreground: #1d1d1f;
+  --muted: #f5f5f7;
+  --muted-foreground: #6e6e73;
+  --accent: #f5f5f7;
+  --accent-foreground: #1d1d1f;
+  --destructive: #e30000;
+  --border: #d2d2d7;
+  --input: #d2d2d7;
+  --ring: #1d1d1f;
+  --radius: 0.875rem;
+
+  /* brand */
+  --seal-green: #3ecf7f;      /* the full stop in the wordmark */
+  --seal-ink: #000000;
+  --seal-navy: #111827;       /* logo tile background */
+  --risk-low: #1f9d55;
+  --risk-mid: #c77700;
+  --risk-high: #d70015;
+}
+
+.dark {
+  --background: #000000;
+  --foreground: #f5f5f7;
+  --card: #1d1d1f;
+  --card-foreground: #f5f5f7;
+  --popover: #1d1d1f;
+  --popover-foreground: #f5f5f7;
+  --primary: #f5f5f7;
+  --primary-foreground: #000000;
+  --secondary: #1d1d1f;
+  --secondary-foreground: #f5f5f7;
+  --muted: #1d1d1f;
+  --muted-foreground: #a1a1a6;
+  --accent: #2c2c2e;
+  --accent-foreground: #f5f5f7;
+  --border: #333336;
+  --input: #333336;
+  --ring: #f5f5f7;
+}
+
+@theme inline {
+  --font-serif: var(--font-source-serif);
+  --color-seal-green: var(--seal-green);
+  --color-risk-low: var(--risk-low);
+  --color-risk-mid: var(--risk-mid);
+  --color-risk-high: var(--risk-high);
+}
+
+@layer base {
+  body {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    letter-spacing: -0.011em;
+  }
+  h1, h2, h3 { letter-spacing: -0.022em; }
+}
+
+@layer utilities {
+  .glass {
+    background: color-mix(in srgb, var(--background) 72%, transparent);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+  }
+  .text-balance { text-wrap: balance; }
+}
+
+/* Arabic: right-to-left layout on the toggle (plan §9); Arabic glyphs from Noto Sans Arabic. */
+html[lang="ar"] body,
+[dir="rtl"] {
+  font-family: var(--font-sans), var(--font-arabic), system-ui, sans-serif;
+}
+:lang(ar) {
+  letter-spacing: 0;
+}
+
+/* Heavenly canvas: a soft white with a breath of green and blue light. */
+@layer base {
+  body {
+    background:
+      radial-gradient(1200px 600px at 10% -10%, rgba(62, 207, 127, 0.07), transparent 60%),
+      radial-gradient(1000px 500px at 100% 0%, rgba(42, 120, 214, 0.06), transparent 60%),
+      #fbfbfd;
+    background-attachment: fixed;
+  }
+}
+@layer utilities {
+  .card {
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 28px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 12px 40px -12px rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(20px) saturate(1.4);
+  }
+  .display {
+    font-family: var(--font-serif), Georgia, serif;
+    letter-spacing: -0.025em;
+    font-weight: 700;
+  }
+}
+
+/* Entrance: rises out of a soft blur. Pure CSS, so it plays even before scripts run. */
+@keyframes seal-rise {
+  from { opacity: 0; transform: translateY(14px); filter: blur(8px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+@layer utilities {
+  .rise { animation: seal-rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .rise-1 { animation-delay: 0.08s; }
+  .rise-2 { animation-delay: 0.16s; }
+  .rise-3 { animation-delay: 0.24s; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rise { animation: none; }
+}
+
+/* Learning battery */
+@keyframes battery-wave { 0% { transform: translateY(0); } 50% { transform: translateY(-14px); } 100% { transform: translateY(0); } }
+@keyframes battery-bubble { 0% { transform: translateY(0) scale(0.6); opacity: 0; } 20% { opacity: 0.8; } 100% { transform: translateY(-170px) scale(1.1); opacity: 0; } }
+@keyframes battery-shine { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+.battery-wave { animation: battery-wave 2.4s ease-in-out infinite; }
+.battery-bubble { animation-name: battery-bubble; animation-timing-function: ease-in; animation-iteration-count: infinite; }

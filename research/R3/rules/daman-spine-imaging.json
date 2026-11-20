@@ -1,0 +1,176 @@
+{
+  "$schema": "seal-rule-dsl/v1",
+  "id": "daman-spine-imaging",
+  "description": "MRI and CT spine rules from Daman's public guideline (ref 2013-MN-0014; current v4.1, with the back-pain criterion from v3.0). Applied to SEAL's fictional insurers.",
+  "rules": [
+    {
+      "id": "DAMAN-SPINE-BACKPAIN",
+      "version": 1,
+      "title": "Spine MRI/CT for back or neck pain without persistent pain and neurologic deficit",
+      "family": "MNEC",
+      "denialCode": "MNEC-003",
+      "denialCodeBasis": "stated",
+      "payers": "*",
+      "target": { "activityType": 3, "codes": ["72141-72158", "72125-72133"], "kind": "imaging" },
+      "when": {
+        "op": "all",
+        "of": [
+          { "op": "hasDiagnosis", "codes": ["M54*"], "principalOnly": true },
+          {
+            "op": "not",
+            "of": {
+              "op": "any",
+              "of": [
+                { "op": "all", "of": [{ "op": "documents", "concept": "symptom_duration" }, { "op": "documents", "concept": "neurologic_deficit" }] },
+                { "op": "documents", "concept": "red_flag_symptom" }
+              ]
+            }
+          }
+        ]
+      },
+      "stages": ["point_of_care", "claim"],
+      "severity": "high",
+      "insurerNeeds": "Documented progressive or persistent pain (with its duration) and a neurologic deficit, or a red-flag finding.",
+      "fixTemplates": [
+        "Low back pain for ____ weeks, persistent despite ____ (treatment) for ____ weeks.",
+        "Neurologic examination: ____ (e.g. reduced power ____ /5 in ____, absent ____ reflex, SLR positive at ____°)."
+      ],
+      "fixActions": ["add_documentation", "remove_order"],
+      "source": {
+        "title": "MRI & CT Spine Adjudication Guideline",
+        "publisher": "Daman (National Health Insurance Company)",
+        "ref": "2013-MN-0014",
+        "version": "3.0",
+        "revisionDate": "2019-11",
+        "section": "Eligibility / Coverage Criteria — Lower back pain / Cervicalgia criteria",
+        "url": "https://www.damanhealth.ae/wp-content/uploads/2025/09/MRI-and-CT-Scan-Spine-V3.0.pdf",
+        "quote": "Lower back pain/ Cervicalgia criteria for mri/CT spine scans (documented): 1. Progressive/persistent pain with profound or progressive neurologic deficit."
+      },
+      "verified": true,
+      "notes": "The current v4.1 (rev 12/12/2025, https://www.damanhealth.ae/wp-content/uploads/2026/01/MRI-CT-Spine-External-Guideline.pdf) lists 'Back pain' among indications without restating this criterion but keeps 'not supported by a medically justified indication/diagnosis' as non-coverage. SEAL keeps the explicit v3.0 criterion; the mock insurer applies it with noise. Scenario S1."
+    },
+    {
+      "id": "DAMAN-SPINE-SCREENING",
+      "version": 1,
+      "title": "Spine MRI/CT used as screening",
+      "family": "MNEC",
+      "denialCode": "MNEC-003",
+      "denialCodeBasis": "stated",
+      "payers": "*",
+      "target": { "activityType": 3, "codes": ["72141-72158", "72125-72133"], "kind": "imaging" },
+      "when": { "op": "not", "of": { "op": "documents", "concept": "signs_or_symptoms_present" } },
+      "stages": ["point_of_care", "claim"],
+      "severity": "high",
+      "insurerNeeds": "Signs or symptoms of a spinal disease or condition. Spine imaging is never covered as a screening tool.",
+      "fixTemplates": ["Presenting with ____ (sign/symptom) since ____."],
+      "fixActions": ["add_documentation", "remove_order"],
+      "source": {
+        "title": "MRI & CT Spine Adjudication Guideline",
+        "publisher": "Daman (National Health Insurance Company)",
+        "ref": "2013-MN-0014",
+        "version": "4.1",
+        "revisionDate": "2025-12-12",
+        "section": "3.3 Non-Coverage",
+        "url": "https://www.damanhealth.ae/wp-content/uploads/2026/01/MRI-CT-Spine-External-Guideline.pdf",
+        "quote": "CT & MRI Spine, used as a screening tool, in the absence of signs or symptoms of a disease or condition."
+      },
+      "verified": true
+    },
+    {
+      "id": "DAMAN-SPINE-REPEAT-180",
+      "version": 1,
+      "title": "Repeat spine MRI/CT within 180 days for the same condition",
+      "family": "MNEC",
+      "denialCode": "MNEC-004",
+      "denialCodeBasis": "inferred",
+      "payers": "*",
+      "target": { "activityType": 3, "codes": ["72141-72158", "72125-72133"], "kind": "imaging" },
+      "when": {
+        "op": "all",
+        "of": [
+          { "op": "priorActivityWithin", "codes": ["72141-72158", "72125-72133"], "days": 180 },
+          { "op": "not", "of": { "op": "documents", "concept": "new_or_progressive_deficit" } }
+        ]
+      },
+      "stages": ["point_of_care", "claim"],
+      "severity": "high",
+      "insurerNeeds": "New or progressive neurological symptoms or deficit, clear disease progression, or planned surgery, documented in the note.",
+      "fixTemplates": ["Since the scan on ____, new/progressive ____ (deficit) documented: ____."],
+      "fixActions": ["add_documentation", "remove_order"],
+      "source": {
+        "title": "MRI & CT Spine Adjudication Guideline",
+        "publisher": "Daman (National Health Insurance Company)",
+        "ref": "2013-MN-0014",
+        "version": "4.1",
+        "revisionDate": "2025-12-12",
+        "section": "3.3 Non-Coverage",
+        "url": "https://www.damanhealth.ae/wp-content/uploads/2026/01/MRI-CT-Spine-External-Guideline.pdf",
+        "quote": "The patient had a CT ort MRI of the spine in the last 180 days for the same condition (If the patient has an obvious medical indication, new or progressive neurological symptoms or deficit, clear signs of disease progression or the eventual future need for surgical intervention, CT/MRI can be repeated"
+      },
+      "verified": true,
+      "notes": "The guideline does not name a code for this case; its list has no MNEC-005. SEAL uses MNEC-004 (without additional supporting diagnoses/activities)."
+    },
+    {
+      "id": "DAMAN-SPINE-SPECIALIST",
+      "version": 1,
+      "title": "Elective spine MRI/CT not requested by a specialist",
+      "family": "CODE",
+      "denialCode": "CODE-010",
+      "denialCodeBasis": "stated",
+      "payers": "*",
+      "target": { "activityType": 3, "codes": ["72141-72158", "72125-72133"], "kind": "imaging" },
+      "when": {
+        "op": "all",
+        "of": [
+          { "op": "encounterTypeIn", "values": [1, 3, 5] },
+          { "op": "clinicianSpecialtyIn", "values": ["general_practice", "family_medicine"] }
+        ]
+      },
+      "stages": ["point_of_care", "claim"],
+      "severity": "high",
+      "insurerNeeds": "For an elective encounter, the scan must be requested by a specialist or consultant.",
+      "fixTemplates": [],
+      "fixActions": ["remove_order"],
+      "source": {
+        "title": "MRI & CT Spine Adjudication Guideline",
+        "publisher": "Daman (National Health Insurance Company)",
+        "ref": "2013-MN-0014",
+        "version": "4.1",
+        "revisionDate": "2025-12-12",
+        "section": "3.4 Payment and Coding Rules",
+        "url": "https://www.damanhealth.ae/wp-content/uploads/2026/01/MRI-CT-Spine-External-Guideline.pdf",
+        "quote": "CT/MRI spine has to be requested by a Specialist/Consultant for an elective encounter; in case of an emergency it can be requested by either a General Practitioner or a Specialist/Consultant."
+      },
+      "verified": true,
+      "notes": "Guideline adds 'For all other plans, either a General Practitioner or a Specialist can request for CT scan'; SEAL's fictional plans apply the specialist requirement to MRI and CT."
+    },
+    {
+      "id": "DAMAN-SPINE-COMBINED-CODE",
+      "version": 1,
+      "title": "Without- and with-contrast spine MRI billed as two codes",
+      "family": "PRCE",
+      "denialCode": "PRCE-010",
+      "denialCodeBasis": "stated",
+      "payers": "*",
+      "target": { "activityType": 3, "codes": ["72141", "72146", "72148"], "kind": "imaging" },
+      "when": { "op": "claimHasActivity", "codes": ["72142", "72147", "72149"] },
+      "stages": ["claim"],
+      "severity": "medium",
+      "insurerNeeds": "One combined 'without then with contrast' code (72156, 72157 or 72158) instead of two separate codes.",
+      "fixTemplates": [],
+      "fixActions": ["rebill_combined_code"],
+      "source": {
+        "title": "MRI & CT Spine Adjudication Guideline",
+        "publisher": "Daman (National Health Insurance Company)",
+        "ref": "2013-MN-0014",
+        "version": "4.1",
+        "revisionDate": "2025-12-12",
+        "section": "3.4 Payment and Coding Rules",
+        "url": "https://www.damanhealth.ae/wp-content/uploads/2026/01/MRI-CT-Spine-External-Guideline.pdf",
+        "quote": "If a CT/MRI without contrast followed by with contrast is performed, use the single CPT code (CT/MRI CPT codes without contrast followed by examination with contrast) for that service, instead of using two separate codes."
+      },
+      "verified": true,
+      "notes": "SEAL suggests the combined code to the coder; it never changes a code itself."
+    }
+  ]
+}

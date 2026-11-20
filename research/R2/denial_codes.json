@@ -1,0 +1,960 @@
+{
+ "$comment": "UAE eClaimLink/Shafafiya denial codes. status=VERIFIED means the code and its description appear in a regulator (DoH) or insurer (Daman) document we downloaded; UNVERIFIED means only seen in a secondary source. typicalFix is SEAL-authored guidance, not regulator text. See sources.md.",
+ "generated": "2026-11-19",
+ "count": 100,
+ "verifiedCount": 13,
+ "codes": [
+  {
+   "code": "AUTH-001",
+   "family": "AUTH",
+   "familyName": "Authorisation",
+   "description": "Prior approval is required and was not obtained",
+   "effectiveTo": null,
+   "status": "VERIFIED",
+   "confirmedIn": [
+    "https://www.damanhealth.ae/wp-content/uploads/2026/01/MRI-CT-Spine-External-Guideline.pdf",
+    "https://www.damanhealth.ae/wp-content/uploads/2025/09/Occupational-Therapy-external-updated.pdf"
+   ],
+   "typicalFix": "Obtain the prior approval (or show it was obtained) and resubmit with the PriorAuthorizationID."
+  },
+  {
+   "code": "AUTH-002",
+   "family": "AUTH",
+   "familyName": "Authorisation",
+   "description": "Services performed are inconsistent with authorized or approved services",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "AUTH-003",
+   "family": "AUTH",
+   "familyName": "Authorisation",
+   "description": "PriorAuthorizationNumber is invalid",
+   "effectiveTo": null,
+   "status": "VERIFIED",
+   "confirmedIn": [
+    "https://www.doh.gov.ae/-/media/Feature/shafifya/BusinessRulesMASTER21.ashx"
+   ]
+  },
+  {
+   "code": "AUTH-004",
+   "family": "AUTH",
+   "familyName": "Authorisation",
+   "description": "Service(s) is (are) performed outside authorization validity date",
+   "effectiveTo": null,
+   "status": "VERIFIED",
+   "confirmedIn": [
+    "https://www.doh.gov.ae/-/media/Feature/shafifya/BusinessRulesMASTER21.ashx"
+   ]
+  },
+  {
+   "code": "AUTH-005",
+   "family": "AUTH",
+   "familyName": "Authorisation",
+   "description": "Claim information is inconsistent with pre-certified/authorized services",
+   "effectiveTo": null,
+   "status": "VERIFIED",
+   "confirmedIn": [
+    "https://www.damanhealth.ae/wp-content/uploads/2026/01/MRI-CT-Spine-External-Guideline.pdf"
+   ],
+   "typicalFix": "Bill only what the approval covers, or obtain an extension and resubmit."
+  },
+  {
+   "code": "AUTH-006",
+   "family": "AUTH",
+   "familyName": "Authorisation",
+   "description": "Alert drug - drug interaction or drug is contra-indicated",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "AUTH-007",
+   "family": "AUTH",
+   "familyName": "Authorisation",
+   "description": "Drug duplicate therapy",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "AUTH-008",
+   "family": "AUTH",
+   "familyName": "Authorisation",
+   "description": "Inappropriate drug dose",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "AUTH-009",
+   "family": "AUTH",
+   "familyName": "Authorisation",
+   "description": "Prescription out of date",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "AUTH-010",
+   "family": "AUTH",
+   "familyName": "Authorisation",
+   "description": "Authorization request overlaps or is within the period of another paid claim or approved authorization",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "AUTH-011",
+   "family": "AUTH",
+   "familyName": "Authorisation",
+   "description": "Waiting period on pre-existing / specific conditions",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "AUTH-012",
+   "family": "AUTH",
+   "familyName": "Authorisation",
+   "description": "Request for information",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "AUTH-013",
+   "family": "AUTH",
+   "familyName": "Authorisation",
+   "description": "Missing eRx Reference number",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "AUTH-014",
+   "family": "AUTH",
+   "familyName": "Authorisation",
+   "description": "Medication has been added to a prior request that is not in line with Pharmacist Edit Restrictions",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "BENX-001",
+   "family": "BENX",
+   "familyName": "Benefit exhausted",
+   "description": "Service / Medication is above AED threshold",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "BENX-002",
+   "family": "BENX",
+   "familyName": "Benefit exhausted",
+   "description": "Benefit maximum for this time period or occurrence has been reached",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "BENX-005",
+   "family": "BENX",
+   "familyName": "Benefit exhausted",
+   "description": "Annual limit/sublimit amount exceeded",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "BSMA-001",
+   "family": "BSMA",
+   "familyName": "Basmah fund",
+   "description": "Member not covered under Basmah",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "BSMA-002",
+   "family": "BSMA",
+   "familyName": "Basmah fund",
+   "description": "Claims is not eligible under Basmah Fund",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "BSMA-003",
+   "family": "BSMA",
+   "familyName": "Basmah fund",
+   "description": "Prior approval is required but not taken (Basmah)",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "CLAI-007",
+   "family": "CLAI",
+   "familyName": "Claim data / contract",
+   "description": "Claim is a work-related injury/illness and thus the liability of the employer",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "CLAI-008",
+   "family": "CLAI",
+   "familyName": "Claim data / contract",
+   "description": "Claim overlaps inpatient stay. Resubmit only those services rendered outside the inpatient stay",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "CLAI-009",
+   "family": "CLAI",
+   "familyName": "Claim data / contract",
+   "description": "Date of birth follows the date of service",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "CLAI-010",
+   "family": "CLAI",
+   "familyName": "Claim data / contract",
+   "description": "Date of death precedes the date of service",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "CLAI-011",
+   "family": "CLAI",
+   "familyName": "Claim data / contract",
+   "description": "Inpatient admission spans multiple rate periods. Resubmit separate claims",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "CLAI-012",
+   "family": "CLAI",
+   "familyName": "Claim data / contract",
+   "description": "Submission not compliant with contractual agreement between provider & payer",
+   "effectiveTo": null,
+   "status": "VERIFIED",
+   "confirmedIn": [
+    "https://www.damanhealth.ae/wp-content/uploads/2025/11/DM-lab-test_Adjudication-Guideline-External-Instruction-Template_V1R0.pdf"
+   ],
+   "typicalFix": "Correct the claim to match the provider-payer contract terms."
+  },
+  {
+   "code": "CLAI-013",
+   "family": "CLAI",
+   "familyName": "Claim data / contract",
+   "description": "Missing an Observation (Dental Tooth #)",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "CLAI-014",
+   "family": "CLAI",
+   "familyName": "Claim data / contract",
+   "description": "Claim not compliant with Resubmission type (used only for resubmissions)",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "CLAI-017",
+   "family": "CLAI",
+   "familyName": "Claim data / contract",
+   "description": "Services not available on direct billing",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "CLAI-018",
+   "family": "CLAI",
+   "familyName": "Claim data / contract",
+   "description": "Claims Recalled By Provider",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "CLAI-019",
+   "family": "CLAI",
+   "familyName": "Claim data / contract",
+   "description": "Incorrect IR-DRG code",
+   "effectiveTo": "2020-03-31",
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "CLAI-020",
+   "family": "CLAI",
+   "familyName": "Claim data / contract",
+   "description": "Missing IR-DRG code",
+   "effectiveTo": "2020-03-31",
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "CLAI-021",
+   "family": "CLAI",
+   "familyName": "Claim data / contract",
+   "description": "Incorrect DRG payment parameter",
+   "effectiveTo": "2020-03-31",
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "CLAI-022",
+   "family": "CLAI",
+   "familyName": "Claim data / contract",
+   "description": "Missing DRG payment parameter",
+   "effectiveTo": "2020-03-31",
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "CLAI-023",
+   "family": "CLAI",
+   "familyName": "Claim data / contract",
+   "description": "Submission not compliant with contractual agreement between non-network physician & payer",
+   "effectiveTo": "2030-12-31",
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "CODE-001",
+   "family": "CODE",
+   "familyName": "Coding",
+   "description": "Missing, incomplete or invalid principal diagnosis",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "CODE-002",
+   "family": "CODE",
+   "familyName": "Coding",
+   "description": "Missing, incomplete or invalid service code",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "CODE-006",
+   "family": "CODE",
+   "familyName": "Coding",
+   "description": "Diagnosis is inconsistent with the procedure",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "CODE-010",
+   "family": "CODE",
+   "familyName": "Coding",
+   "description": "Activity/diagnosis inconsistent with clinician specialty",
+   "effectiveTo": null,
+   "status": "VERIFIED",
+   "confirmedIn": [
+    "https://www.damanhealth.ae/wp-content/uploads/2026/01/MRI-CT-Spine-External-Guideline.pdf",
+    "https://www.damaninsurance.ae/wp-content/uploads/2026/06/Extracorporeal-Shockwave-Therapy-in-Musculoskeletal-Indications-External-16062026.pdf",
+    "https://damanhealth.ae/wp-content/uploads/2025/01/Ambulatory-ECG-Monitoring-External-Instruction-Template_V1R0.pdf"
+   ],
+   "typicalFix": "The ordering clinician's specialty must be eligible for the service; route through an eligible specialist."
+  },
+  {
+   "code": "CODE-012",
+   "family": "CODE",
+   "familyName": "Coding",
+   "description": "Encounter type inconsistent with service(s) / diagnosis",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "CODE-013",
+   "family": "CODE",
+   "familyName": "Coding",
+   "description": "Invalid principal diagnosis",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "CODE-014",
+   "family": "CODE",
+   "familyName": "Coding",
+   "description": "Activity/diagnosis is inconsistent with the patient's age/gender",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "CODE-015",
+   "family": "CODE",
+   "familyName": "Coding",
+   "description": "Activity/diagnosis is inconsistent with the provider type",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "CODE-016",
+   "family": "CODE",
+   "familyName": "Coding",
+   "description": "Activity/diagnosis inconsistent with Service",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "COPY-001",
+   "family": "COPY",
+   "familyName": "Patient share",
+   "description": "Deductible/co-pay not collected from member",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "COPY-002",
+   "family": "COPY",
+   "familyName": "Patient share",
+   "description": "Incorrect Patient Share",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "COPY-003",
+   "family": "COPY",
+   "familyName": "Patient share",
+   "description": "Missing Patient Share",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "DRG-001",
+   "family": "DRG",
+   "familyName": "DRG",
+   "description": "Incorrect DRG code",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "DRG-002",
+   "family": "DRG",
+   "familyName": "DRG",
+   "description": "Missing DRG code",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "DRG-003",
+   "family": "DRG",
+   "familyName": "DRG",
+   "description": "Incorrect Billing Regime",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "DRG-004",
+   "family": "DRG",
+   "familyName": "DRG",
+   "description": "Missing Activities",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "DRG-005",
+   "family": "DRG",
+   "familyName": "DRG",
+   "description": "Missing Observation (ActivityCost and/or File Attachment)",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "DUPL-001",
+   "family": "DUPL",
+   "familyName": "Duplicate",
+   "description": "Claim is a duplicate based on service codes and dates",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "DUPL-002",
+   "family": "DUPL",
+   "familyName": "Duplicate",
+   "description": "Payment already made for same/similar service within set time frame",
+   "effectiveTo": null,
+   "status": "VERIFIED",
+   "confirmedIn": [
+    "https://www.damanhealth.ae/wp-content/uploads/2025/11/DM-lab-test_Adjudication-Guideline-External-Instruction-Template_V1R0.pdf"
+   ],
+   "typicalFix": "Confirm the earlier service; if it was not the same service or the window is wrong, appeal with dates."
+  },
+  {
+   "code": "ELIG-001",
+   "family": "ELIG",
+   "familyName": "Eligibility",
+   "description": "Patient is not a covered member",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "ELIG-005",
+   "family": "ELIG",
+   "familyName": "Eligibility",
+   "description": "Services performed after the last date of coverage",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "ELIG-006",
+   "family": "ELIG",
+   "familyName": "Eligibility",
+   "description": "Services performed prior to the effective date of coverage",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "ELIG-007",
+   "family": "ELIG",
+   "familyName": "Eligibility",
+   "description": "Services performed by a non-network provider",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "ELIG-008",
+   "family": "ELIG",
+   "familyName": "Eligibility",
+   "description": "Services performed by a non-network physician",
+   "effectiveTo": "2030-12-31",
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "MNEC-003",
+   "family": "MNEC",
+   "familyName": "Medical necessity",
+   "description": "Service is not clinically indicated based on good clinical practice",
+   "effectiveTo": null,
+   "status": "VERIFIED",
+   "confirmedIn": [
+    "https://www.damanhealth.ae/wp-content/uploads/2026/01/MRI-CT-Spine-External-Guideline.pdf",
+    "https://www.damaninsurance.ae/wp-content/uploads/2026/06/Extracorporeal-Shockwave-Therapy-in-Musculoskeletal-Indications-External-16062026.pdf",
+    "https://www.damanhealth.ae/wp-content/uploads/2025/09/Occupational-Therapy-external-updated.pdf",
+    "https://damanhealth.ae/wp-content/uploads/2025/01/Ambulatory-ECG-Monitoring-External-Instruction-Template_V1R0.pdf"
+   ],
+   "typicalFix": "Document the clinical indication the insurer's guideline requires (findings, duration, failed treatment), then resubmit as a correction with the note attached."
+  },
+  {
+   "code": "MNEC-004",
+   "family": "MNEC",
+   "familyName": "Medical necessity",
+   "description": "Service is not clinically indicated based on good clinical practice, without additional supporting diagnoses/activities",
+   "effectiveTo": null,
+   "status": "VERIFIED",
+   "confirmedIn": [
+    "https://www.damanhealth.ae/wp-content/uploads/2025/11/DM-lab-test_Adjudication-Guideline-External-Instruction-Template_V1R0.pdf",
+    "https://www.damanhealth.ae/wp-content/uploads/2026/01/MRI-CT-Spine-External-Guideline.pdf",
+    "https://www.damaninsurance.ae/wp-content/uploads/2026/06/Extracorporeal-Shockwave-Therapy-in-Musculoskeletal-Indications-External-16062026.pdf",
+    "https://www.damanhealth.ae/wp-content/uploads/2025/09/Occupational-Therapy-external-updated.pdf",
+    "https://damanhealth.ae/wp-content/uploads/2025/01/Ambulatory-ECG-Monitoring-External-Instruction-Template_V1R0.pdf"
+   ],
+   "typicalFix": "Link a supporting diagnosis already in the record or add documentation that justifies the service; otherwise remove the line."
+  },
+  {
+   "code": "MNEC-005",
+   "family": "MNEC",
+   "familyName": "Medical necessity",
+   "description": "Service/supply may be appropriate, but too frequent",
+   "effectiveTo": null,
+   "status": "VERIFIED",
+   "confirmedIn": [
+    "https://www.damanhealth.ae/wp-content/uploads/2025/11/DM-lab-test_Adjudication-Guideline-External-Instruction-Template_V1R0.pdf",
+    "https://www.damanhealth.ae/wp-content/uploads/2025/09/Occupational-Therapy-external-updated.pdf",
+    "https://damanhealth.ae/wp-content/uploads/2025/01/Ambulatory-ECG-Monitoring-External-Instruction-Template_V1R0.pdf"
+   ],
+   "typicalFix": "Show the date of the last test and the documented reason for repeating it early, or remove the line."
+  },
+  {
+   "code": "MNEC-006",
+   "family": "MNEC",
+   "familyName": "Medical necessity",
+   "description": "Alternative service should have been utilized",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "MNEC-007",
+   "family": "MNEC",
+   "familyName": "Medical necessity",
+   "description": "Service is not clinically indicated based on good clinical practice, without additional supporting documentation",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "NCOV-001",
+   "family": "NCOV",
+   "familyName": "Not covered",
+   "description": "Diagnosis(es) is (are) not covered",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "NCOV-002",
+   "family": "NCOV",
+   "familyName": "Not covered",
+   "description": "Pre-existing conditions are not covered",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "NCOV-003",
+   "family": "NCOV",
+   "familyName": "Not covered",
+   "description": "Service(s) is (are) not covered",
+   "effectiveTo": null,
+   "status": "VERIFIED",
+   "confirmedIn": [
+    "https://www.damanhealth.ae/wp-content/uploads/2025/11/DM-lab-test_Adjudication-Guideline-External-Instruction-Template_V1R0.pdf",
+    "https://www.damanhealth.ae/wp-content/uploads/2026/01/MRI-CT-Spine-External-Guideline.pdf",
+    "https://www.damanhealth.ae/wp-content/uploads/2025/09/Occupational-Therapy-external-updated.pdf",
+    "https://damanhealth.ae/wp-content/uploads/2025/01/Ambulatory-ECG-Monitoring-External-Instruction-Template_V1R0.pdf"
+   ],
+   "typicalFix": "Service is excluded by the plan; check benefits before ordering. Usually not recoverable."
+  },
+  {
+   "code": "NCOV-009",
+   "family": "NCOV",
+   "familyName": "Not covered",
+   "description": "Dental treatments are not covered",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "NCOV-010",
+   "family": "NCOV",
+   "familyName": "Not covered",
+   "description": "Elective procedure is not covered",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "NCOV-012",
+   "family": "NCOV",
+   "familyName": "Not covered",
+   "description": "Eye exams and treatments are not covered",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "NCOV-014",
+   "family": "NCOV",
+   "familyName": "Not covered",
+   "description": "Hearing services are not covered",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "NCOV-018",
+   "family": "NCOV",
+   "familyName": "Not covered",
+   "description": "Immunizations are not covered",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "NCOV-019",
+   "family": "NCOV",
+   "familyName": "Not covered",
+   "description": "Preventative care is not covered",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "NCOV-020",
+   "family": "NCOV",
+   "familyName": "Not covered",
+   "description": "Services resulting from attempted suicide or self-infliction are not covered",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "NCOV-021",
+   "family": "NCOV",
+   "familyName": "Not covered",
+   "description": "Vaccinations are not covered",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "NCOV-024",
+   "family": "NCOV",
+   "familyName": "Not covered",
+   "description": "Chronic Condition Service(s) is (are) not covered",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "NCOV-025",
+   "family": "NCOV",
+   "familyName": "Not covered",
+   "description": "Service(s) is (are) not performed (used after audit)",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "NCOV-027",
+   "family": "NCOV",
+   "familyName": "Not covered",
+   "description": "Non Coverage of certain medication as per policy",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "PRCE-001",
+   "family": "PRCE",
+   "familyName": "Price / payment",
+   "description": "Calculation discrepancy",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "PRCE-002",
+   "family": "PRCE",
+   "familyName": "Price / payment",
+   "description": "Payment is included in the allowance for another service",
+   "effectiveTo": null,
+   "status": "VERIFIED",
+   "confirmedIn": [
+    "https://www.damanhealth.ae/wp-content/uploads/2025/11/DM-lab-test_Adjudication-Guideline-External-Instruction-Template_V1R0.pdf"
+   ],
+   "typicalFix": "Remove the separately billed component that is included in another paid service."
+  },
+  {
+   "code": "PRCE-003",
+   "family": "PRCE",
+   "familyName": "Price / payment",
+   "description": "Recovery of Payment",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "PRCE-006",
+   "family": "PRCE",
+   "familyName": "Price / payment",
+   "description": "Consultation within free follow up period",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "PRCE-007",
+   "family": "PRCE",
+   "familyName": "Price / payment",
+   "description": "Service has no contract price",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "PRCE-008",
+   "family": "PRCE",
+   "familyName": "Price / payment",
+   "description": "Multiple procedure payment rules incorrectly applied",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "PRCE-009",
+   "family": "PRCE",
+   "familyName": "Price / payment",
+   "description": "Charges inconsistent with clinician specialty",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "PRCE-010",
+   "family": "PRCE",
+   "familyName": "Price / payment",
+   "description": "Use bundled code",
+   "effectiveTo": null,
+   "status": "VERIFIED",
+   "confirmedIn": [
+    "https://www.damanhealth.ae/wp-content/uploads/2026/01/MRI-CT-Spine-External-Guideline.pdf"
+   ],
+   "typicalFix": "Rebill with the single bundled code."
+  },
+  {
+   "code": "PRCE-011",
+   "family": "PRCE",
+   "familyName": "Price / payment",
+   "description": "Discount discrepancy",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "PRCE-012",
+   "family": "PRCE",
+   "familyName": "Price / payment",
+   "description": "Recovery of Payment – DHIC Authorized",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "SURC-001",
+   "family": "SURC",
+   "familyName": "Safety (drug/procedure)",
+   "description": "Severe drug - drug interaction",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "SURC-002",
+   "family": "SURC",
+   "familyName": "Safety (drug/procedure)",
+   "description": "Severe drug - age contraindication",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "SURC-003",
+   "family": "SURC",
+   "familyName": "Safety (drug/procedure)",
+   "description": "Severe drug - gender contraindication",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "SURC-004",
+   "family": "SURC",
+   "familyName": "Safety (drug/procedure)",
+   "description": "Severe drug - diaganosis contraindication",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "SURC-005",
+   "family": "SURC",
+   "familyName": "Safety (drug/procedure)",
+   "description": "Severe procedure\\service - diagnosis contraindication",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "SURC-006",
+   "family": "SURC",
+   "familyName": "Safety (drug/procedure)",
+   "description": "Severe procedure\\service - drug contraindication",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "SURC-007",
+   "family": "SURC",
+   "familyName": "Safety (drug/procedure)",
+   "description": "Severe procedure\\service - procedure contraindication",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "SURC-008",
+   "family": "SURC",
+   "familyName": "Safety (drug/procedure)",
+   "description": "Serious safety issue with drug dose",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "TIME-001",
+   "family": "TIME",
+   "familyName": "Time limit",
+   "description": "Time limit for submission has expired",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "TIME-002",
+   "family": "TIME",
+   "familyName": "Time limit",
+   "description": "Requested additional information was not received or was not received within time limit",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "TIME-003",
+   "family": "TIME",
+   "familyName": "Time limit",
+   "description": "Appeal procedures not followed or time limits not met",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  },
+  {
+   "code": "WRNG-001",
+   "family": "WRNG",
+   "familyName": "Wrong receiver",
+   "description": "Wrong submission, receiver is not responsible for the payer within this transaction submission.",
+   "effectiveTo": null,
+   "status": "UNVERIFIED",
+   "confirmedIn": []
+  }
+ ]
+}

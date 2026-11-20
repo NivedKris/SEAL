@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SEAL sample — DHA eClaimLink Remittance.Advice answering claim SSH-2026-004417 (scenario S6).
+  The CT line is refused with MNEC-003; the other lines are paid. All identifiers are fictional.
+-->
+<Remittance.Advice>
+  <Header>
+    <SenderID>INS-FALCON</SenderID>
+    <ReceiverID>DHA-F-SEAL001</ReceiverID>
+    <TransactionDate>12/12/2026 10:15</TransactionDate>
+    <RecordCount>1</RecordCount>
+    <DispositionFlag>TEST</DispositionFlag>
+  </Header>
+  <Claim>
+    <ID>SSH-2026-004417</ID>
+    <IDPayer>FH-CLM-5520193</IDPayer>
+    <ProviderID>DHA-F-SEAL001</ProviderID>
+    <PaymentReference>FH-EFT-20261212-0088</PaymentReference>
+    <DateSettlement>12/12/2026 10:00</DateSettlement>
+    <Encounter>
+      <FacilityID>DHA-F-SEAL001</FacilityID>
+    </Encounter>
+    <Activity>
+      <ID>1</ID>
+      <Start>18/11/2026 19:20</Start>
+      <Type>3</Type>
+      <Code>99284</Code>
+      <Quantity>1</Quantity>
+      <Net>460.00</Net>
+      <List>460.00</List>
+      <Clinician>DHA-P-SEAL0207</Clinician>
+      <PaymentAmount>460.00</PaymentAmount>
+    </Activity>
+    <Activity>
+      <ID>2</ID>
+      <Start>18/11/2026 20:10</Start>
+      <Type>3</Type>
+      <Code>74177</Code>
+      <Quantity>1</Quantity>
+      <Net>1700.00</Net>
+      <List>1700.00</List>
+      <Clinician>DHA-P-SEAL0207</Clinician>
+      <PriorAuthorizationID>PA-FH-77120</PriorAuthorizationID>
+      <PaymentAmount>0.00</PaymentAmount>
+      <DenialCode>MNEC-003</DenialCode>
+    </Activity>
+    <Activity>
+      <ID>3</ID>
+      <Start>18/11/2026 19:35</Start>
+      <Type>3</Type>
+      <Code>85025</Code>
+      <Quantity>1</Quantity>
+      <Net>150.00</Net>
+      <List>150.00</List>
+      <Clinician>DHA-P-SEAL0207</Clinician>
+      <PaymentAmount>150.00</PaymentAmount>
+    </Activity>
+  </Claim>
+</Remittance.Advice>
