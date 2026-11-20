@@ -44,11 +44,11 @@ export function Admin() {
   const ks = a.settings.killSwitches ?? {};
   const groqModels = [...new Set(Object.values(a.models.groq))];
   return (
-    <main className="mx-auto max-w-[1400px] px-6 pb-24 pt-12">
+    <main className="mx-auto max-w-[1400px] px-4 md:px-6 pb-24 pt-12">
       <p className="text-[13px] font-medium text-muted-foreground">Administrator · System admin</p>
-      <h1 className="display mt-1 text-[52px] leading-tight">Settings</h1>
+      <h1 className="display mt-1 text-[34px] md:text-[44px] lg:text-[52px] leading-tight">Settings</h1>
 
-      <div className="mt-8 grid grid-cols-2 gap-8">
+      <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
         <section className="card p-6">
           <h2 className="text-[20px] font-semibold">Demo data</h2>
           <p className="mt-1 text-[13px] text-muted-foreground">
@@ -79,7 +79,7 @@ export function Admin() {
             <span>Mock insurer delay (seconds until the remittance is ready)</span>
             <input type="number" min={0} defaultValue={a.settings.insurerDelaySeconds} onBlur={(e) => patch({ insurerDelaySeconds: Number(e.target.value) }, "delay")} className="w-24 rounded-full border border-border px-3 py-1 text-right" />
           </label>
-          <div className="mt-4 grid grid-cols-2 gap-4 text-[13px]">
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-[13px]">
             {(["active", "shadow"] as const).map((k) => (
               <label key={k} className="block">
                 <span className="text-muted-foreground">{k === "active" ? "Active judge (routes claims)" : "Shadow judge (scored alongside)"}</span>
@@ -104,7 +104,7 @@ export function Admin() {
       <section className="mt-8 card p-6">
         <h2 className="text-[20px] font-semibold">Agents</h2>
         <p className="mt-1 text-[13px] text-muted-foreground">Switch an agent&apos;s Groq model, or turn it off: the claim check falls back to rules only; other agents use their built-in templates or wait for a person.</p>
-        <table className="mt-4 w-full text-[13px]">
+        <div className="-mx-2 overflow-x-auto px-2"><table className="mt-4 w-full text-[13px]">
           <thead>
             <tr className="text-left text-[12px] text-muted-foreground">
               <th className="pb-2 font-medium">Agent</th>
@@ -128,13 +128,13 @@ export function Admin() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       </section>
 
       <section className="mt-8 card p-6">
         <h2 className="text-[20px] font-semibold">Assumptions in the seed</h2>
         <p className="mt-1 text-[13px] text-muted-foreground">Values with no public source. Everything else traces to research/ (R1–R5).</p>
-        <table className="mt-3 w-full text-[13px]">
+        <div className="-mx-2 overflow-x-auto px-2"><table className="mt-3 w-full text-[13px]">
           <tbody>
             {a.seed.assumptions.map((x) => (
               <tr key={x.key} className="border-t border-border/60 align-top">
@@ -144,7 +144,7 @@ export function Admin() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       </section>
     </main>
   );

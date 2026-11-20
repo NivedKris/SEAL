@@ -45,7 +45,7 @@ export function FixPanel({ claimId, run, onApplied }: { claimId: string; run?: n
 
   if (!fixes || fixes.length === 0) return null;
   return (
-    <section className="relative overflow-hidden rounded-[32px] bg-[#07130d] p-8 text-white ring-1 ring-seal-green/25">
+    <section className="relative overflow-hidden rounded-[32px] bg-[#07130d] p-5 md:p-8 text-white ring-1 ring-seal-green/25">
       <div className="pointer-events-none absolute -right-20 -top-24 size-80 rounded-full bg-seal-green/20 blur-3xl" />
       <div className="relative flex items-center gap-3">
         <span className="flex size-11 items-center justify-center rounded-2xl bg-seal-green text-[#06120b]">

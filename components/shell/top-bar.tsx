@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Settings } from "lucide-react";
+import { Banknote, BookCheck, ClipboardList, MessageCircleQuestion, Settings, Sparkles, Stethoscope } from "lucide-react";
 import { SealLogo } from "@/components/brand/seal-logo";
 import { APP_ROUTES, userFor } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
+const TAB_ICON: Record<string, React.ComponentType<{ className?: string }>> = { "/emr": Stethoscope, "/doctor": MessageCircleQuestion, "/billing": ClipboardList, "/clinic": Banknote, "/rules": BookCheck, "/ai-health": Sparkles };
 const initials = (n: string) => n.replace(/^Dr\.\s*/, "").split(/\s+/).map((w) => w[0]).slice(0, 2).join("");
 
 /** Glass top bar: wordmark, the views, who is signed in, language, settings. */
@@ -28,12 +29,14 @@ export function TopBar() {
   }, [lang]);
   const me = userFor(pathname);
   return (
+    <>
     <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-[#07090c]/90 text-white backdrop-blur-2xl backdrop-saturate-150">
-      <div className="mx-auto flex h-14 max-w-[1440px] items-center gap-8 px-6">
+      <div className="mx-auto flex h-14 max-w-[1440px] items-center gap-3 px-4 md:gap-6 md:px-6 lg:gap-8">
         <Link href="/" className="text-white" aria-label="SEAL home" dir="ltr">
           <SealLogo height={22} />
         </Link>
-        <nav className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto text-[14px]">
+        <div className="flex-1 md:hidden" />
+        <nav className="hidden min-w-0 flex-1 items-center gap-1 overflow-x-auto text-[14px] md:flex">
           {APP_ROUTES.map((r) => {
             const active = pathname === r.href || pathname.startsWith(r.href + "/");
             return (
@@ -60,5 +63,23 @@ export function TopBar() {
         </Link>
       </div>
     </header>
+      {/* Phones: Instagram-style tab bar at the bottom */}
+      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-white/[0.08] bg-[#07090c]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-2xl md:hidden" aria-label="Views">
+        <div className="grid grid-cols-6">
+          {APP_ROUTES.map((r) => {
+            const active = pathname === r.href || pathname.startsWith(r.href + "/");
+            const Icon = TAB_ICON[r.href] ?? Sparkles;
+            return (
+              <Link key={r.href} href={r.href} className={cn("flex flex-col items-center gap-1 py-2.5 text-[10px] font-medium transition-colors", active ? "text-seal-green" : "text-white/55")}>
+                <span className={cn("flex h-7 w-12 items-center justify-center rounded-full transition-colors", active && "bg-seal-green/15")}>
+                  <Icon className="size-[19px]" />
+                </span>
+                {lang === "ar" ? r.labelAr : r.label}
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+    </>
   );
 }

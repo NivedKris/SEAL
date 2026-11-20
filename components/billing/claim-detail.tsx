@@ -165,7 +165,7 @@ export function ClaimDetail({ id }: { id: string }) {
     return () => clearInterval(t);
   }, [status, id, load]);
 
-  if (notFound) return <main className="mx-auto max-w-[1400px] px-6 py-24 text-center text-muted-foreground">{notFound}</main>;
+  if (notFound) return <main className="mx-auto max-w-[1400px] px-4 md:px-6 py-24 text-center text-muted-foreground">{notFound}</main>;
   if (!detail) return <SealLoader className="min-h-[70vh]" size={44} label="Opening the claim" />;
 
   const c = detail.claim;
@@ -175,21 +175,21 @@ export function ClaimDetail({ id }: { id: string }) {
   const claimRisk = check.routed?.riskScore ?? (c.status !== "checking" ? c.riskScore : null);
 
   return (
-    <main className="mx-auto max-w-[1400px] px-6 pb-24 pt-8">
+    <main className="mx-auto max-w-[1400px] px-4 md:px-6 pb-24 pt-8">
       <Link href="/billing" className="inline-flex items-center gap-1 text-[13px] text-muted-foreground hover:text-foreground">
         <ArrowLeft className="size-3.5" /> Claims
       </Link>
 
       {/* Hero: who, what, and the live check */}
-      <section className="relative mt-4 overflow-hidden rounded-[36px] bg-[#0b0b0d] p-9 text-white shadow-[0_40px_100px_-40px_rgba(0,0,0,0.7)]">
+      <section className="relative mt-4 overflow-hidden rounded-[36px] bg-[#0b0b0d] p-5 md:p-9 text-white shadow-[0_40px_100px_-40px_rgba(0,0,0,0.7)]">
         <div className="pointer-events-none absolute -left-24 -top-32 size-[420px] rounded-full bg-seal-green/20 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-40 right-10 size-[380px] rounded-full bg-[#2a78d6]/20 blur-3xl" />
-        <div className="relative flex items-start justify-between gap-8">
-          <div className="flex items-center gap-5">
-            <span className="flex size-20 items-center justify-center rounded-full bg-white/10 text-[26px] font-semibold ring-1 ring-white/15">{initials(detail.patient.name)}</span>
+        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
+          <div className="flex items-center gap-4 sm:gap-5">
+            <span className="flex size-14 shrink-0 sm:size-20 items-center justify-center rounded-full bg-white/10 text-[26px] font-semibold ring-1 ring-white/15">{initials(detail.patient.name)}</span>
             <div>
               <div className="flex items-center gap-3">
-                <h1 className="display text-[44px] leading-tight">{detail.patient.name}</h1>
+                <h1 className="display text-[30px] md:text-[44px] leading-tight">{detail.patient.name}</h1>
                 <StatusPill status={c.status} className="!bg-white/10 !text-white" />
               </div>
               <p className="mt-1 text-[16px] text-white/60">
@@ -198,10 +198,10 @@ export function ClaimDetail({ id }: { id: string }) {
               <p className="mt-1 font-mono text-[13px] text-white/35">{c.claimNo}</p>
             </div>
           </div>
-          <div className="flex items-center gap-8">
+          <div className="flex items-center gap-6 lg:gap-8">
             <div className="text-right">
               <div className="text-[14px] text-white/50">Claim value</div>
-              <div className="text-[36px] font-bold tabular-nums">{aed(c.net)}</div>
+              <div className="whitespace-nowrap text-[26px] font-bold tabular-nums sm:text-[36px]">{aed(c.net)}</div>
             </div>
             <div className="rounded-full bg-white p-1.5">
               <RiskRing p={running && !check.routed ? null : claimRisk} size={150} />
@@ -211,7 +211,7 @@ export function ClaimDetail({ id }: { id: string }) {
         <Pipeline check={check} running={running} />
       </section>
 
-      <div className="mt-8 grid grid-cols-[1fr_380px] gap-8">
+      <div className="mt-8 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 lg:gap-8">
         <div className="min-w-0 space-y-8">
           {["hold", "ready"].includes(c.status) && check.routed && <FixPanel claimId={c._id} run={check.run} onApplied={() => setStreamKey((k) => k + 1)} />}
           <Lines lines={v.lines} rules={(check.routed?.lines as RuleLine[] | undefined) ?? check.rules?.lines} risk={lineRisk} remittance={detail.remittances.at(-1)} />
@@ -234,7 +234,7 @@ export function ClaimDetail({ id }: { id: string }) {
           <Actions detail={detail} running={running} onChanged={load} onRecheck={() => setStreamKey((k) => k + 1)} />
           <SimilarClaims similar={check.retrieval?.similar} />
           <details className="group card overflow-hidden !p-0">
-            <summary className="cursor-pointer list-none px-6 py-4 text-[14px] font-semibold text-muted-foreground group-open:text-foreground">Technical details</summary>
+            <summary className="cursor-pointer list-none px-4 md:px-6 py-4 text-[14px] font-semibold text-muted-foreground group-open:text-foreground">Technical details</summary>
             <div className="space-y-4 border-t border-black/[0.05] p-4">
               <Xml id={c._id} version={v.version} />
               <Timeline events={events} />
@@ -277,7 +277,7 @@ function Pipeline({ check, running }: { check: CheckState; running: boolean }) {
       <div className="mb-4 flex items-center justify-between text-[14px]">
         {running && !check.routed ? <ShinyText text="SEAL is checking this claim…" color="#8e8e93" shineColor="#ffffff" speed={1.5} className="text-[16px] font-medium" /> : <span className="text-[16px] font-medium text-white/70">{check.routed ? `Checked in ${fmt(check.routed.ms)}` : "Not checked yet"}</span>}
       </div>
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {steps.map((s, i) => {
           const active = running && i === firstPending;
           return (
@@ -296,7 +296,7 @@ function Pipeline({ check, running }: { check: CheckState; running: boolean }) {
       </div>
       {check.error && <p className="mt-4 rounded-2xl bg-risk-high/20 px-5 py-3 text-[14px]">The check could not finish, so the claim is held for a person.</p>}
       {check.routed && (
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className={cn("mt-4 rounded-2xl px-6 py-5", check.routed.route === "hold" ? "bg-[#ff453a]/15" : "bg-seal-green/15")}>
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className={cn("mt-4 rounded-2xl px-4 md:px-6 py-5", check.routed.route === "hold" ? "bg-[#ff453a]/15" : "bg-seal-green/15")}>
           <div className={cn("text-[24px] font-bold", check.routed.route === "hold" ? "text-[#ff6961]" : "text-seal-green")}>{check.routed.route === "hold" ? "Held before sending" : "Ready to send"}</div>
           {check.routed.holdReasons.length > 0 ? (
             <ul className="mt-2 space-y-1.5 text-[16px] text-white/85">
@@ -325,7 +325,7 @@ function Lines({ lines, rules, risk, remittance }: { lines: Line[]; rules?: Rule
           const hits = rules?.find((r) => r.activityId === l.activityId)?.hits ?? [];
           const paid = remittance?.lines.find((x) => x.activityId === l.activityId);
           return (
-            <div key={l.activityId} className="grid grid-cols-[64px_1fr_120px_180px] items-center gap-4 border-b border-border/70 px-5 py-3.5 last:border-0">
+            <div key={l.activityId} className="grid grid-cols-2 md:grid-cols-[64px_1fr_120px_180px] items-center gap-4 border-b border-border/70 px-5 py-3.5 last:border-0">
               <span className="font-mono text-[13px]">{l.code}</span>
               <div className="min-w-0">
                 <div className="text-[14px] font-medium">

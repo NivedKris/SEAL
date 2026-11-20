@@ -40,9 +40,9 @@ export function LearningBattery({ ready, refused, learnedRules, onLearned }: { r
   };
 
   return (
-    <section className="relative overflow-hidden rounded-[36px] bg-[#05070a] p-10 text-white">
+    <section className="relative overflow-hidden rounded-[36px] bg-[#05070a] p-5 md:p-10 text-white">
       <div className="pointer-events-none absolute -left-24 top-0 size-[460px] rounded-full bg-seal-green/[0.14] blur-3xl" />
-      <div className="relative grid grid-cols-[1fr_380px] items-center gap-12">
+      <div className="relative grid grid-cols-1 lg:grid-cols-[1fr_380px] items-center gap-6 lg:gap-12">
         <div>
           <div className="flex items-center gap-2 text-[14px] font-semibold tracking-[0.18em] text-seal-green">
             <Brain className="size-4" /> SEAL LEARNS FROM EVERY CLAIM
@@ -61,9 +61,9 @@ export function LearningBattery({ ready, refused, learnedRules, onLearned }: { r
                 ))}
                 <div className="absolute inset-0 bg-[linear-gradient(110deg,transparent_30%,rgba(255,255,255,0.25)_45%,transparent_60%)] bg-[length:200%_100%] [animation:battery-shine_3s_linear_infinite]" />
               </motion.div>
-              <div className="relative flex h-full items-center px-8">
+              <div className="relative flex h-full items-center px-5 md:px-8">
                 <div>
-                  <div className="display text-[64px] leading-none tabular-nums drop-shadow-[0_2px_12px_rgba(0,0,0,0.5)]">{running ? "…" : <CountUp to={ready} separator="," duration={1.4} trigger="load" />}</div>
+                  <div className="display text-[44px] md:text-[64px] leading-none tabular-nums drop-shadow-[0_2px_12px_rgba(0,0,0,0.5)]">{running ? "…" : <CountUp to={ready} separator="," duration={1.4} trigger="load" />}</div>
                   <div className="mt-1 text-[16px] font-medium text-white/85">{running ? "SEAL is learning" : "finished claims ready to teach SEAL"}</div>
                 </div>
               </div>

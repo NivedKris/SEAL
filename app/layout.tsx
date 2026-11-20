@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${serif.variable} ${mono.variable} ${arabic.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} ${serif.variable} ${mono.variable} ${arabic.variable} font-sans antialiased pb-[calc(68px+env(safe-area-inset-bottom))] md:pb-0`}>
         <Splash />
         <TopBar />
         {children}

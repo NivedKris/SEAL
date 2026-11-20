@@ -52,7 +52,7 @@ export function RiskRing({ p, size = 168 }: { p: number | null | undefined; size
           <span className="text-sm text-muted-foreground">Scoring…</span>
         ) : (
           <>
-            <span className={cn("text-[44px] font-semibold leading-none tracking-tight", riskText[b])}>
+            <span className={cn("text-[30px] md:text-[44px] font-semibold leading-none tracking-tight", riskText[b])}>
               <CountUp key={Math.round(p * 100)} to={Math.round(p * 100)} duration={0.9} trigger="load" />
               <span className="text-2xl">%</span>
             </span>

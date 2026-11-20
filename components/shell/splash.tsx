@@ -65,7 +65,7 @@ export function Splash() {
                 animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                 exit={{ opacity: 0, y: -10, filter: "blur(14px)" }}
                 transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-                className={m.big ? "display text-[120px] leading-none" : "display text-[56px] leading-tight text-white"}
+                className={m.big ? "display text-[72px] leading-none sm:text-[96px] md:text-[120px]" : "display px-6 text-center text-[34px] leading-tight text-white md:text-[56px]"}
               >
                 {m.big ? (
                   <GradientText colors={["#ffffff", "#9ef0c4", "#3ecf7f", "#ffffff"]} animationSpeed={4} className="!m-0 !bg-transparent italic">
@@ -79,7 +79,7 @@ export function Splash() {
               <motion.div key="logo" className="relative flex flex-col items-center text-white" initial={{ opacity: 0, scale: 0.86, filter: "blur(12px)" }} animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }} transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}>
                 <motion.div className="absolute size-56 rounded-full bg-seal-green/25 blur-3xl" animate={{ opacity: [0.3, 0.9, 0.4], scale: [0.8, 1.2, 1] }} transition={{ duration: 1.8, ease: "easeInOut" }} />
                 <div className="relative">
-                  <SealLogo height={96} />
+                  <SealLogo height={72} />
                 </div>
                 <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6, duration: 0.6 }} className="relative mt-6 text-[16px] tracking-[0.02em] text-white/55">
                   Claims that don&apos;t come back.

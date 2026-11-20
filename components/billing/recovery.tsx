@@ -32,9 +32,9 @@ export function RecoveryQueue() {
   }, [load]);
   const row = rows?.find((r) => r.claimId === sel) ?? null;
   return (
-    <div className="grid grid-cols-[1fr_560px] gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_560px] gap-6">
       <div className="card overflow-hidden !p-0">
-        <div className="grid grid-cols-[140px_1fr_110px_110px_90px] gap-3 border-b border-border bg-secondary/60 px-5 py-2.5 text-[12px] font-medium text-muted-foreground">
+        <div className="hidden md:grid md:grid-cols-[140px_1fr_110px_110px_90px] gap-3 border-b border-border bg-secondary/60 px-5 py-2.5 text-[12px] font-medium text-muted-foreground">
           <span>Claim</span>
           <span>Patient · refused</span>
           <span className="text-right">At stake</span>
@@ -44,7 +44,7 @@ export function RecoveryQueue() {
         {rows === null && <SealLoader label="Loading refused claims" />}
         <div className="max-h-[640px] overflow-y-auto">
           {rows?.map((r) => (
-            <button key={r.claimId} onClick={() => setSel(r.claimId)} className={cn("grid w-full grid-cols-[140px_1fr_110px_110px_90px] items-center gap-3 border-b border-border/70 px-5 py-3 text-left last:border-0 hover:bg-secondary/50", sel === r.claimId && "bg-secondary")}>
+            <button key={r.claimId} onClick={() => setSel(r.claimId)} className={cn("grid w-full grid-cols-2 md:grid-cols-[140px_1fr_110px_110px_90px] items-center gap-3 border-b border-border/70 px-5 py-3 text-left last:border-0 hover:bg-secondary/50", sel === r.claimId && "bg-secondary")}>
               <span className="font-mono text-[12px]">
                 {r.claimNo}
                 {r.scenario && <span className="ml-1 rounded border border-border px-1 font-sans text-[10px] text-muted-foreground">{r.scenario}</span>}
@@ -62,7 +62,7 @@ export function RecoveryQueue() {
           ))}
         </div>
       </div>
-      <div>{row ? <RecoveryPanel key={row.claimId} row={row} onChanged={load} /> : <div className="rounded-2xl bg-secondary p-8 text-center text-[14px] text-muted-foreground">Pick a refused claim. SEAL drafts the correction or appeal; you edit and approve it.</div>}</div>
+      <div>{row ? <RecoveryPanel key={row.claimId} row={row} onChanged={load} /> : <div className="rounded-2xl bg-secondary p-5 md:p-8 text-center text-[14px] text-muted-foreground">Pick a refused claim. SEAL drafts the correction or appeal; you edit and approve it.</div>}</div>
     </div>
   );
 }

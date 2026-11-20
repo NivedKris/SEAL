@@ -6,11 +6,11 @@ import { cn } from "@/lib/utils";
  */
 export function PhoneFrame({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className="flex min-h-[calc(100dvh-3rem)] items-center justify-center bg-secondary py-10 max-[430px]:block max-[430px]:min-h-dvh max-[430px]:bg-background max-[430px]:py-0">
+    <div className="flex min-h-[calc(100dvh-3rem)] items-center justify-center bg-secondary py-10 max-[430px]:block max-[430px]:min-h-0 max-[430px]:bg-background max-[430px]:py-0">
       <div
         className={cn(
           "relative h-[844px] w-[390px] overflow-hidden rounded-[56px] border-[10px] border-black bg-background shadow-[0_30px_80px_-20px_rgba(0,0,0,0.35)]",
-          "max-[430px]:h-dvh max-[430px]:w-full max-[430px]:rounded-none max-[430px]:border-0 max-[430px]:shadow-none",
+          "max-[430px]:h-[calc(100dvh-56px-68px-env(safe-area-inset-bottom))] max-[430px]:w-full max-[430px]:rounded-none max-[430px]:border-0 max-[430px]:shadow-none",
           className,
         )}
       >

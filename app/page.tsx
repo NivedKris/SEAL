@@ -30,9 +30,9 @@ export default function Home() {
           <Particles particleCount={160} particleSpread={12} speed={0.08} particleColors={["#3ecf7f", "#ffffff", "#9ef0c4"]} moveParticlesOnHover alphaParticles particleBaseSize={70} disableRotation={false} />
         </div>
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-64 bg-gradient-to-b from-transparent to-[#05070a]" />
-        <div className="relative mx-auto w-full max-w-[1200px] px-6">
+        <div className="relative mx-auto w-full max-w-[1200px] px-4 md:px-6">
           <DecryptedText text="FOR UAE HOSPITALS · BUILT FOR DHA eCLAIMLINK" animateOn="view" sequential speed={35} revealDirection="start" className="text-seal-green" encryptedClassName="text-seal-green/40" parentClassName="text-[13px] font-semibold tracking-[0.22em]" />
-          <h1 className="display mt-6 max-w-5xl text-[100px] leading-[0.98]">
+          <h1 className="display mt-6 max-w-5xl text-[50px] sm:text-[72px] lg:text-[100px] leading-[0.98]">
             Get paid{" "}
             <GradientText colors={["#3ecf7f", "#b6f7d3", "#2fbf72", "#3ecf7f"]} animationSpeed={6}>
               the first time.
@@ -51,11 +51,11 @@ export default function Home() {
           <p className="rise rise-2 mt-8 max-w-2xl text-[20px] leading-relaxed text-white/60">
             It reads the doctor&apos;s note against every insurer rule while it&apos;s being written, and fixes the claim before anyone presses send.
           </p>
-          <div className="rise rise-3 mt-10 flex items-center gap-4">
-            <Link href="/emr" className="inline-flex items-center gap-2.5 rounded-full bg-seal-green px-7 py-4 text-[17px] font-semibold text-[#06120b] shadow-[0_0_40px_-8px_rgba(62,207,127,0.7)] transition-transform hover:scale-[1.03]">
+          <div className="rise rise-3 mt-10 flex flex-wrap items-center gap-3 sm:gap-4">
+            <Link href="/emr" className="inline-flex items-center gap-2.5 rounded-full bg-seal-green px-5 md:px-7 py-4 text-[17px] font-semibold text-[#06120b] shadow-[0_0_40px_-8px_rgba(62,207,127,0.7)] transition-transform hover:scale-[1.03]">
               Start your day <ArrowRight className="size-5" />
             </Link>
-            <a href="#story" className="rounded-full px-6 py-4 text-[17px] font-medium text-white/70 ring-1 ring-white/15 backdrop-blur transition-colors hover:text-white hover:ring-white/30">
+            <a href="#story" className="rounded-full px-4 md:px-6 py-4 text-[17px] font-medium text-white/70 ring-1 ring-white/15 backdrop-blur transition-colors hover:text-white hover:ring-white/30">
               Watch a claim get checked
             </a>
           </div>
@@ -75,14 +75,14 @@ export default function Home() {
           <DotGrid dotSize={3} gap={28} baseColor="#16251d" activeColor={GREEN} proximity={140} />
         </div>
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(70%_60%_at_50%_50%,transparent,#05070a)]" />
-        <div className="relative mx-auto max-w-[1200px] px-6 py-28">
+        <div className="relative mx-auto max-w-[1200px] px-4 md:px-6 py-28">
           <FadeContent effect="focus" trigger="scroll">
             <p className="text-[14px] font-semibold tracking-[0.2em] text-[#e8a33d]">THE PROBLEM</p>
-            <h2 className="display mt-4 max-w-3xl text-[60px] leading-[1.05]">
+            <h2 className="display mt-4 max-w-3xl text-[36px] md:text-[48px] lg:text-[60px] leading-[1.05]">
               Most refusals are decided <span className="text-seal-green">the moment a test is ordered.</span>
             </h2>
           </FadeContent>
-          <div className="mt-16 grid grid-cols-3 gap-10">
+          <div className="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-10">
             <Stat value={8.6} decimals={1} suffix="%+" tone="#ff6b5b" label="of test claims disputed, in a UAE study of 598,000 claims" source="AccuMed via Gulf News" />
             <Stat value={12} prefix="2 to " label="tests ordered for one diabetes diagnosis, in the same study" source="AccuMed via Gulf News" />
             <Stat value={47.3} decimals={1} suffix="%" tone={GREEN} label="of refused claims trace back to documentation" source="Risk Manag Healthc Policy, 2026" />
@@ -93,12 +93,12 @@ export default function Home() {
       {/* ── At the order ── */}
       <section className="relative overflow-hidden py-28">
         <div className="pointer-events-none absolute left-1/2 top-1/3 size-[700px] -translate-x-1/2 rounded-full bg-seal-green/[0.08] blur-3xl" />
-        <div className="relative mx-auto grid max-w-[1200px] grid-cols-[1.35fr_1fr] items-center gap-14 px-6">
+        <div className="relative mx-auto grid max-w-[1200px] grid-cols-1 lg:grid-cols-[1.35fr_1fr] items-center gap-6 lg:gap-14 px-4 md:px-6">
           <FadeContent effect="focus" trigger="scroll">
-            <EmrMock />
+            <div className="-mx-4 overflow-x-auto px-4 pb-2 md:mx-0 md:px-0"><div className="min-w-[620px]"><EmrMock /></div></div>
           </FadeContent>
           <div>
-            <h2 className="display text-[54px] leading-[1.05]">So SEAL sits beside the order, not after the claim.</h2>
+            <h2 className="display text-[34px] md:text-[44px] lg:text-[54px] leading-[1.05]">So SEAL sits beside the order, not after the claim.</h2>
             <p className="mt-6 text-[19px] leading-relaxed text-white/60">Every test and scan is read against the complaint, the findings and the insurer&apos;s own rule — in under a second, while the doctor is still typing.</p>
             <div className="mt-8 rounded-3xl bg-seal-green/[0.04] p-6 ring-1 ring-seal-green/40">
               <div className="display text-[24px] text-seal-green">The doctor decides.</div>
@@ -109,12 +109,12 @@ export default function Home() {
       </section>
 
       {/* ── Three people ── */}
-      <section className="mx-auto max-w-[1200px] px-6 py-28">
+      <section className="mx-auto max-w-[1200px] px-4 md:px-6 py-28">
         <p className="text-[14px] font-semibold tracking-[0.2em] text-[#e8a33d]">THE PRODUCT</p>
-        <h2 className="display mt-4 text-[60px] leading-[1.05]">
+        <h2 className="display mt-4 text-[36px] md:text-[48px] lg:text-[60px] leading-[1.05]">
           One product. Three people. <span className="text-seal-green">Here&apos;s what each one sees.</span>
         </h2>
-        <div className="mt-14 grid grid-cols-3 gap-6">
+        <div className="mt-14 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <Person href="/billing" icon={<ClipboardList className="size-5" />} who="Noura · Billing" what="The claim, before it goes." body="Every claim checked the moment it exists, with the exact fix — and refused ones drafted back for her to approve.">
             <MiniClaim />
           </Person>
@@ -133,10 +133,10 @@ export default function Home() {
           <Threads color={GREEN} amplitude={1.2} distance={0.2} enableMouseInteraction />
         </div>
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#05070a] via-[#05070a]/70 to-transparent" />
-        <div className="relative mx-auto grid max-w-[1200px] grid-cols-[1fr_1fr] items-center gap-16 px-6">
+        <div className="relative mx-auto grid max-w-[1200px] grid-cols-1 lg:grid-cols-[1fr_1fr] items-center gap-6 lg:gap-16 px-4 md:px-6">
           <div>
             <Stethoscope className="size-8 text-seal-green" />
-            <h2 className="display mt-6 text-[58px] leading-[1.05]">Built around the doctor, not the form.</h2>
+            <h2 className="display mt-6 text-[36px] md:text-[46px] lg:text-[58px] leading-[1.05]">Built around the doctor, not the form.</h2>
             <ul className="mt-8 space-y-4 text-[19px] text-white/75">
               {["Risks appear beside the order, while the note is open", "Fill a blank in a sentence — SEAL never writes for you", "Questions only when a claim truly needs them: 3, 1 or none", "Your answers become a signed addendum, word for word"].map((t) => (
                 <li key={t} className="flex gap-3">
@@ -164,7 +164,7 @@ export default function Home() {
       </section>
 
       {/* ── Footer ── */}
-      <footer className="mx-auto flex max-w-[1200px] items-center justify-between px-6 py-12 text-[14px] text-white/45">
+      <footer className="mx-auto flex max-w-[1200px] flex-col items-center gap-3 px-4 py-12 text-center text-[14px] text-white/45 md:flex-row md:justify-between md:px-6 md:text-left">
         <span className="text-white">
           <SealLogo height={22} />
         </span>
@@ -178,7 +178,7 @@ export default function Home() {
 function Stat({ value, label, source, prefix = "", suffix = "", decimals = 0, tone = "#ffffff" }: { value: number; label: string; source: string; prefix?: string; suffix?: string; decimals?: number; tone?: string }) {
   return (
     <div className="border-t border-white/10 pt-6">
-      <div className="display text-[72px] leading-none" style={{ color: tone }}>
+      <div className="display text-[48px] md:text-[72px] leading-none" style={{ color: tone }}>
         {prefix}
         <CountUp to={value} decimals={decimals} duration={1.6} />
         {suffix}
@@ -318,8 +318,8 @@ function MiniMoney() {
 
 function DoctorCard() {
   return (
-    <div className="relative mx-auto w-[360px] rounded-[48px] bg-black p-3 shadow-[0_40px_120px_-30px_rgba(62,207,127,0.45)] ring-1 ring-white/15">
-      <div className="rounded-[38px] bg-white px-6 pb-7 pt-9 text-[#111]">
+    <div className="relative mx-auto w-full max-w-[360px] rounded-[48px] bg-black p-3 shadow-[0_40px_120px_-30px_rgba(62,207,127,0.45)] ring-1 ring-white/15">
+      <div className="rounded-[38px] bg-white px-4 md:px-6 pb-7 pt-9 text-[#111]">
         <div className="flex items-center justify-between">
           <SealLogo height={18} />
           <span className="text-[12px] text-black/45">1 of 2</span>
@@ -332,7 +332,7 @@ function DoctorCard() {
         <div className="mt-5 flex gap-2">
           <div className="flex-1 rounded-xl px-3 py-2.5 text-[15px] ring-1 ring-black/10">8</div>
           {["days", "weeks", "months"].map((u) => (
-            <span key={u} className={`rounded-full px-3 py-2.5 text-[13px] ${u === "weeks" ? "bg-[#111] text-white" : "bg-black/[0.05]"}`}>
+            <span key={u} className={`rounded-full px-3 py-2.5 text-[13px] ${u ==="weeks" ? "bg-[#111] text-white" : "bg-black/[0.05]"}`}>
               {u}
             </span>
           ))}

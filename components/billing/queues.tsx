@@ -100,11 +100,11 @@ export function BillingQueues() {
   const attention = count(TABS[0]);
 
   return (
-    <main className="mx-auto max-w-[1360px] px-6 pb-24 pt-12">
+    <main className="mx-auto max-w-[1360px] px-4 md:px-6 pb-24 pt-12">
       <p className="text-[17px] font-medium text-muted-foreground">{greeting()}, Noura</p>
-      <h1 className="display mt-1 text-[52px] leading-tight">{attention ? `${attention} claim${attention > 1 ? "s" : ""} need you` : "Nothing needs you right now"}</h1>
+      <h1 className="display mt-1 text-[34px] md:text-[44px] lg:text-[52px] leading-tight">{attention ? `${attention} claim${attention > 1 ? "s" : ""} need you` : "Nothing needs you right now"}</h1>
 
-      <div className="mt-8 inline-flex rounded-full bg-black/[0.04] p-1.5">
+      <div className="-mx-4 mt-8 flex max-w-[100vw] overflow-x-auto px-4 md:mx-0 md:inline-flex md:px-0"><div className="inline-flex shrink-0 rounded-full bg-black/[0.04] p-1.5">
         {TABS.map((t) => (
           <button key={t.key} onClick={() => setTab(t.key)} className={cn("relative rounded-full px-5 py-2.5 text-[15px] font-semibold transition-colors", tab === t.key ? "text-background" : "text-muted-foreground hover:text-foreground")}>
             {tab === t.key && <motion.span layoutId="tab" className="absolute inset-0 rounded-full bg-foreground shadow" transition={{ type: "spring", bounce: 0.2, duration: 0.5 }} />}
@@ -113,6 +113,7 @@ export function BillingQueues() {
             </span>
           </button>
         ))}
+      </div>
       </div>
 
       <AnimatePresence mode="wait">
@@ -139,7 +140,7 @@ export function BillingQueues() {
       <div className="pointer-events-none fixed bottom-8 right-8 z-50 space-y-3">
         <AnimatePresence>
           {toasts.map((t) => (
-            <motion.div key={t.id} initial={{ opacity: 0, y: 20, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, x: 40 }} className="flex items-center gap-4 rounded-3xl bg-[#07130d] px-6 py-4 text-white shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)] ring-1 ring-seal-green/40">
+            <motion.div key={t.id} initial={{ opacity: 0, y: 20, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, x: 40 }} className="flex items-center gap-4 rounded-3xl bg-[#07130d] px-4 md:px-6 py-4 text-white shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)] ring-1 ring-seal-green/40">
               <span className={cn("flex size-11 items-center justify-center rounded-full", t.paid ? "bg-seal-green text-[#06120b]" : "bg-[#ff9f0a] text-black")}>{t.paid ? <CheckCircle2 className="size-6" /> : "!"}</span>
               <div>
                 <div className="text-[17px] font-semibold">{t.paid ? "Paid" : "Partly refused"} · {aed(t.amount)}</div>
@@ -161,7 +162,7 @@ function Journey({ rows }: { rows: Row[] }) {
     return () => clearInterval(t);
   }, []);
   return (
-    <div className="grid grid-cols-2 gap-5">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
       {rows.map((c) => {
         const ready = c.readyAt ? new Date(c.readyAt).getTime() : null;
         const sent = c.sentAt ? new Date(c.sentAt).getTime() : null;
@@ -178,7 +179,7 @@ function Journey({ rows }: { rows: Row[] }) {
                 </div>
               </div>
             </div>
-            <div className="mt-6 grid grid-cols-3 gap-2 text-[13px] font-medium">
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-[13px] font-medium">
               <Step done label="Sent" />
               <Step active={left !== 0} done={left === 0} label={left === 0 ? "Reviewed" : "Insurer reviewing"} />
               <Step label="Paid" />
@@ -206,7 +207,7 @@ function Step({ label, done, active }: { label: string; done?: boolean; active?:
 /** Paid: done and dusted. */
 function PaidList({ rows }: { rows: Row[] }) {
   return (
-    <div className="grid grid-cols-3 gap-5">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
       {rows.map((c, i) => (
         <motion.div key={c._id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
           <Link href={`/billing/claims/${c._id}`} className="relative block overflow-hidden rounded-[28px] bg-[#07130d] p-7 text-white ring-1 ring-seal-green/25 transition-transform hover:-translate-y-0.5">
@@ -219,7 +220,7 @@ function PaidList({ rows }: { rows: Row[] }) {
             </div>
             <div className="relative mt-6 text-[22px] font-semibold">{c.patientName}</div>
             <div className="relative text-[14px] text-white/55">{c.providerName} · {c.payerName}</div>
-            <div className="display relative mt-5 text-[40px] leading-none">{aed(c.paidAmount ?? c.net)}</div>
+            <div className="display relative mt-5 text-[28px] md:text-[40px] leading-none">{aed(c.paidAmount ?? c.net)}</div>
             <div className="relative mt-2 text-[13px] text-white/45">first time, no refusals</div>
           </Link>
         </motion.div>
@@ -236,9 +237,9 @@ function Review({ rows }: { rows: Row[] }) {
   const cards = useMemo(() => deck.map((r) => <ClaimCard key={r._id} r={r} />), [rows]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div>
-      <div className="grid grid-cols-[560px_1fr] items-center gap-16">
-        <div className="relative h-[440px] w-[520px]">
-          <Stack cards={cards} layout="cascade" visible={4} spread={0.35} radius={32} sendToBackOnClick onChange={(i) => setTop(i)} className="h-[420px] w-[500px]" />
+      <div className="grid grid-cols-1 lg:grid-cols-[560px_1fr] items-center gap-6 lg:gap-16">
+        <div className="relative mx-auto h-[400px] w-full max-w-[520px] md:h-[440px] lg:mx-0">
+          <Stack cards={cards} layout="cascade" visible={4} spread={0.35} radius={32} sendToBackOnClick onChange={(i) => setTop(i)} className="h-[380px] w-[calc(100%-16px)] max-w-[500px] md:h-[420px]" />
         </div>
         <AnimatePresence mode="wait">
           <motion.div key={c._id} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}>
@@ -252,7 +253,7 @@ function Review({ rows }: { rows: Row[] }) {
               ))}
             </ul>
             <div className="mt-8 flex items-center gap-3">
-              <Link href={`/billing/claims/${c._id}`} className="inline-flex items-center gap-2.5 rounded-full bg-foreground px-7 py-4 text-[17px] font-semibold text-background shadow-[0_12px_30px_-10px_rgba(0,0,0,0.5)] transition-transform hover:scale-[1.02]">
+              <Link href={`/billing/claims/${c._id}`} className="inline-flex items-center gap-2.5 rounded-full bg-foreground px-5 md:px-7 py-4 text-[17px] font-semibold text-background shadow-[0_12px_30px_-10px_rgba(0,0,0,0.5)] transition-transform hover:scale-[1.02]">
                 Open and fix <ArrowRight className="size-5" />
               </Link>
               <span className="flex items-center gap-2 text-[14px] text-muted-foreground">
@@ -273,7 +274,7 @@ function Review({ rows }: { rows: Row[] }) {
 function ClaimCard({ r }: { r: Row }) {
   const p = r.status === "checking" ? null : r.riskScore;
   return (
-    <div className="flex h-full w-full flex-col justify-between bg-white p-8 text-foreground">
+    <div className="flex h-full w-full flex-col justify-between bg-white p-5 md:p-8 text-foreground">
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-4">
           <span className="flex size-16 items-center justify-center rounded-full bg-gradient-to-br from-[#1d1d1f] to-[#55555a] text-[22px] font-semibold text-white">{initials(r.patientName)}</span>
@@ -286,7 +287,7 @@ function ClaimCard({ r }: { r: Row }) {
       </div>
       <div>
         <div className="text-[14px] text-muted-foreground">Claim value</div>
-        <div className="text-[44px] font-bold tracking-tight tabular-nums">{aed(r.net)}</div>
+        <div className="text-[30px] md:text-[44px] font-bold tracking-tight tabular-nums">{aed(r.net)}</div>
         <div className="mt-1 flex items-center gap-2 text-[15px]">
           <ShieldCheck className="size-4 text-[#178a4c]" /> {r.payerName}
         </div>
@@ -307,7 +308,7 @@ function List({ rows }: { rows: Row[] }) {
   return (
     <div className="card overflow-hidden !p-0">
       {rows.map((c, i) => (
-        <Link key={c._id} href={`/billing/claims/${c._id}`} className={cn("group grid grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_150px_160px_24px] items-center gap-6 px-7 py-5 transition-colors hover:bg-black/[0.02]", i > 0 && "border-t border-black/[0.05]")}>
+        <Link key={c._id} href={`/billing/claims/${c._id}`} className={cn("group grid grid-cols-2 md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_150px_160px_24px] items-center gap-6 px-5 md:px-7 py-5 transition-colors hover:bg-black/[0.02]", i > 0 && "border-t border-black/[0.05]")}>
           <div className="flex min-w-0 items-center gap-4">
             <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-black/[0.05] text-[15px] font-semibold">{initials(c.patientName)}</span>
             <div className="min-w-0">
@@ -323,7 +324,7 @@ function List({ rows }: { rows: Row[] }) {
           </div>
           <span className="text-right text-[18px] font-semibold tabular-nums">{aed(c.net)}</span>
           {c.status === "checking" ? <RiskBar p={null} /> : c.riskScore == null ? <span className="text-[13px] text-muted-foreground">—</span> : <RiskBar p={c.riskScore} />}
-          <ArrowRight className="size-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+          <ArrowRight className="hidden size-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 md:block" />
         </Link>
       ))}
     </div>
@@ -339,7 +340,7 @@ function Empty({ tab }: { tab: string }) {
   };
   const [h, p] = text[tab] ?? ["Nothing here", ""];
   return (
-    <div className="card flex flex-col items-center px-8 py-20 text-center">
+    <div className="card flex flex-col items-center px-5 md:px-8 py-20 text-center">
       <CheckCircle2 className="size-12 text-seal-green" />
       <div className="display mt-4 text-[32px]">{h}</div>
       <p className="mt-2 max-w-md text-[17px] text-muted-foreground">{p}</p>

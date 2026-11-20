@@ -191,13 +191,13 @@ export function EmrScreen() {
   const anyBusy = busy.rules || busy.live || busy.deep;
 
   return (
-    <main className="mx-auto grid max-w-[1560px] grid-cols-[260px_1fr_400px] gap-6 px-6 py-8">
+    <main className="mx-auto grid max-w-[1560px] grid-cols-1 gap-6 px-4 py-6 md:px-6 md:py-8 lg:grid-cols-[240px_1fr] xl:grid-cols-[260px_1fr_400px]">
       {/* ── Today's clinic ── */}
-      <aside className="sticky top-[88px] self-start">
+      <aside className="min-w-0 top-[88px] self-start lg:sticky">
         <div className="px-2 text-[13px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Today&apos;s clinic</div>
-        <div className="mt-3 space-y-1.5">
+        <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-2 lg:mx-0 lg:block lg:space-y-1.5 lg:overflow-visible lg:px-0 lg:pb-0">
           {list.map((x) => (
-            <button key={x._id} onClick={() => router.push(`/emr?e=${x._id}`)} className={cn("flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition-all", x._id === id ? "bg-white shadow-[0_8px_30px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.06]" : "hover:bg-white/60")}>
+            <button key={x._id} onClick={() => router.push(`/emr?e=${x._id}`)} className={cn("flex w-[210px] shrink-0 items-center gap-3 rounded-2xl px-3 py-3 text-left transition-all lg:w-full", x._id === id ? "bg-white shadow-[0_8px_30px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.06]" : "hover:bg-white/60")}>
               <span className={cn("shrink-0 rounded-full p-[2.5px]", x._id === id ? "bg-gradient-to-tr from-seal-green via-[#9ef0c4] to-[#2a78d6] shadow-[0_0_18px_-4px_rgba(62,207,127,0.8)]" : "bg-gradient-to-tr from-seal-green/70 to-[#2a78d6]/60")}>
                 <span className={cn("flex size-10 items-center justify-center rounded-full border-2 border-white text-[13px] font-semibold", x._id === id ? "bg-foreground text-background" : "bg-[#f1f1f4]")}>{initials(x.patientName)}</span>
               </span>
@@ -219,12 +219,12 @@ export function EmrScreen() {
           <div className="card"><SealLoader label="Opening the encounter" /></div>
         ) : (
           <>
-            <motion.div key={data.encounter._id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }} className="card relative overflow-hidden p-8">
+            <motion.div key={data.encounter._id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }} className="card relative overflow-hidden p-5 md:p-8">
               <div className="pointer-events-none absolute -right-24 -top-24 size-72 rounded-full bg-seal-green/10 blur-3xl" />
-              <div className="relative flex items-start gap-6">
+              <div className="relative flex flex-col items-start gap-5 sm:flex-row sm:gap-6">
                 <span className="flex size-20 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#1d1d1f] to-[#55555a] text-[26px] font-semibold text-white shadow-xl">{initials(data.patient.name)}</span>
                 <div className="min-w-0 flex-1">
-                  <h1 className="display text-[40px] leading-tight">{data.patient.name}</h1>
+                  <h1 className="display text-[28px] md:text-[40px] leading-tight">{data.patient.name}</h1>
                   <div className="mt-2 flex flex-wrap gap-2 text-[14px]">
                     <Pill>
                       {data.patient.sex === "M" ? "Male" : "Female"}, {data.patient.age}
@@ -236,7 +236,7 @@ export function EmrScreen() {
                     <Pill muted>Member {data.insurance.memberNo}</Pill>
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="sm:text-right">
                   <div className="text-[16px] font-semibold">{data.provider.name}</div>
                   <div className="text-[13px] capitalize text-muted-foreground">{data.provider.specialty.replace(/_/g, " ")}</div>
                   <div className="mt-1 text-[13px] text-muted-foreground">{new Date(data.encounter.start).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Dubai" })}</div>
@@ -246,7 +246,7 @@ export function EmrScreen() {
 
             {error && <div className="rounded-2xl bg-risk-high/[0.07] px-5 py-3 text-[14px] text-risk-high">{error}</div>}
             {!open && data.claim && (
-              <Link href={`/billing/claims/${data.claim._id}`} className="card flex items-center justify-between px-6 py-4 text-[15px]">
+              <Link href={`/billing/claims/${data.claim._id}`} className="card flex items-center justify-between px-4 md:px-6 py-4 text-[15px]">
                 <span>
                   Signed. Claim <span className="font-mono">{data.claim.claimNo}</span> is with billing.
                 </span>
@@ -325,7 +325,7 @@ export function EmrScreen() {
             {open && (
               <div className="flex items-center justify-end gap-4 pt-2">
                 <span className="text-[14px] text-muted-foreground">{atRisk ? `${atRisk} order${atRisk > 1 ? "s" : ""} still at risk` : check ? "Every order is supported" : ""}</span>
-                <button onClick={sign} disabled={signing} className="inline-flex items-center gap-2.5 rounded-full bg-foreground px-8 py-4 text-[17px] font-semibold text-background shadow-[0_12px_30px_-10px_rgba(0,0,0,0.5)] transition-transform hover:scale-[1.02] disabled:opacity-60">
+                <button onClick={sign} disabled={signing} className="inline-flex items-center gap-2.5 rounded-full bg-foreground px-5 md:px-8 py-4 text-[17px] font-semibold text-background shadow-[0_12px_30px_-10px_rgba(0,0,0,0.5)] transition-transform hover:scale-[1.02] disabled:opacity-60">
                   {signing ? <Loader2 className="size-5 animate-spin" /> : <Check className="size-5" />} Sign and send to billing
                 </button>
               </div>
@@ -335,7 +335,7 @@ export function EmrScreen() {
       </section>
 
       {/* ── SEAL ── */}
-      <aside className="sticky top-[88px] self-start">
+      <aside className="top-[88px] self-start lg:col-span-2 xl:sticky xl:col-span-1">
         <div className="relative overflow-hidden rounded-[30px] bg-[#0b0b0d] p-6 text-white shadow-[0_30px_80px_-30px_rgba(0,0,0,0.6)]">
           <div className="pointer-events-none absolute -left-20 -top-28 size-72 rounded-full bg-seal-green/25 blur-3xl" />
           <div className="relative flex items-center justify-between">

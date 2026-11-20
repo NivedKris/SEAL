@@ -57,10 +57,10 @@ export function RulesStudio() {
   const decided = data?.proposals.filter((p) => p.status !== "proposed") ?? [];
 
   return (
-    <main className="mx-auto max-w-[1400px] px-6 pb-24 pt-12">
+    <main className="mx-auto max-w-[1400px] px-4 md:px-6 pb-24 pt-12">
       <p className="text-[13px] font-medium text-muted-foreground">Rania Fakhoury · Coding specialist</p>
-      <div className="flex items-end justify-between">
-        <h1 className="display mt-1 text-[52px] leading-tight">Insurer rules</h1>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <h1 className="display mt-1 text-[34px] md:text-[44px] lg:text-[52px] leading-tight">Insurer rules</h1>
         <button onClick={cycle} disabled={busy === "cycle"} className="inline-flex items-center gap-2 rounded-full bg-foreground px-5 py-2.5 text-[14px] font-medium text-background disabled:opacity-50">
           {busy === "cycle" ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4" />} Run learning cycle
         </button>
@@ -87,7 +87,7 @@ export function RulesStudio() {
                 Flags <span className="font-mono">{p.dsl.target.codes.join(", ")}</span> for <span className="font-medium">{p.payerId}</span> when {describe(p.dsl.when)} → would be refused <span className="font-mono">{p.dsl.denialCode}</span>.
               </p>
               {p.backtest && (
-                <div className="mt-3 grid grid-cols-3 gap-3 text-[13px]">
+                <div className="mt-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-[13px]">
                   <Stat label={`Refusals caught (last ${p.windowDays} days)`} value={`${p.backtest.caught} of ${p.backtest.refusedInCluster}`} />
                   <Stat label="Paid claims it would also flag" value={`${p.backtest.firedOnPaid} of ${p.backtest.paidChecked}`} />
                   <Stat label="Example claims" value={p.exampleClaimIds.slice(0, 3).join(", ")} mono />
@@ -198,7 +198,7 @@ function CycleLog({ steps, running }: { steps: Step[]; running: boolean }) {
         ))}
       </ol>
       {ev?.after && (
-        <div className="mt-4 grid grid-cols-5 gap-3 text-[13px]">
+        <div className="mt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 text-[13px]">
           {[
             ["Hold precision", "precision"],
             ["Refusal recall", "recall"],

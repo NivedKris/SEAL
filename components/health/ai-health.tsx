@@ -42,13 +42,13 @@ export function AiHealth() {
   const critical = h.alerts.filter((a) => a.level === "critical");
 
   return (
-    <main className="mx-auto max-w-[1200px] px-6 pb-24 pt-12">
+    <main className="mx-auto max-w-[1200px] px-4 md:px-6 pb-24 pt-12">
       <p className="text-[17px] font-medium text-muted-foreground">Insights</p>
-      <h1 className="display mt-1 text-[52px] leading-tight">How SEAL is helping Seabreeze</h1>
+      <h1 className="display mt-1 text-[34px] md:text-[44px] lg:text-[52px] leading-tight">How SEAL is helping Seabreeze</h1>
       <p className="mt-3 max-w-2xl text-[19px] text-muted-foreground">Measured on claims the insurer has already decided, so every number here is checked against what really happened.</p>
 
       {critical.map((a) => (
-        <div key={a.text} className="mt-6 flex items-center gap-3 rounded-3xl bg-risk-high/[0.06] px-6 py-4 text-[16px]">
+        <div key={a.text} className="mt-6 flex items-center gap-3 rounded-3xl bg-risk-high/[0.06] px-4 md:px-6 py-4 text-[16px]">
           <AlertTriangle className="size-5 text-risk-high" /> {a.text}
         </div>
       ))}
@@ -57,7 +57,7 @@ export function AiHealth() {
         <LearningBattery ready={h.learning.readyCases} refused={h.learning.refusedReady} learnedRules={h.learning.learnedRules} onLearned={() => void reload()} />
       </div>
 
-      <div className="mt-5 grid grid-cols-2 gap-5">
+      <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-5">
         <Big
           icon={<ShieldCheck className="size-6" />}
           value={pct(q?.refusalRecall)}
@@ -69,7 +69,7 @@ export function AiHealth() {
         <Big icon={<TrendingUp className="size-6" />} value={pct(q?.firstPassWithSeal)} suffix="%" title={`of claims paid the first time, up from ${pct(q?.firstPassBaseline)}%`} body="When the claims SEAL holds are fixed before they go." tone="blue" />
       </div>
 
-      <div className="mt-5 grid grid-cols-3 gap-5">
+      <div className="mt-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         <Small icon={<Sparkles className="size-5" />} title="When SEAL holds a claim" line={`it is right ${pct(q?.holdPrecision)} times in 100`} />
         <Small icon={<Clock className="size-5" />} title="Each claim is checked in" line={seconds ? `about ${seconds} second${seconds > 1 ? "s" : ""}` : "a few seconds"} />
         <Small
@@ -86,7 +86,7 @@ export function AiHealth() {
         />
       </div>
 
-      <div className={cn("mt-5 flex items-center gap-3 rounded-3xl px-6 py-4 text-[15px]", backupShare > 0.1 ? "bg-risk-mid/[0.08]" : "bg-seal-green/[0.08]")}>
+      <div className={cn("mt-5 flex items-center gap-3 rounded-3xl px-4 md:px-6 py-4 text-[15px]", backupShare > 0.1 ? "bg-risk-mid/[0.08]" : "bg-seal-green/[0.08]")}>
         <span className={cn("size-2.5 rounded-full", backupShare > 0.1 ? "bg-risk-mid" : "bg-seal-green")} />
         {backupShare > 0.1 ? "The AI service is busy; SEAL is using its backup, so some checks take longer." : "The AI service is running normally."}
       </div>
@@ -97,9 +97,9 @@ export function AiHealth() {
 function Big({ icon, value, suffix, title, body, tone }: { icon: React.ReactNode; value: number; suffix: string; title: string; body: string; tone: "green" | "blue" }) {
   return (
     <div className="rise">
-      <SpotlightCard theme="light" spotlightColor={tone === "green" ? "rgba(62,207,127,0.25)" : "rgba(42,120,214,0.2)"} className="card h-full !rounded-[32px] p-9">
+      <SpotlightCard theme="light" spotlightColor={tone === "green" ? "rgba(62,207,127,0.25)" : "rgba(42,120,214,0.2)"} className="card h-full !rounded-[32px] p-5 md:p-9">
         <span className={cn("flex size-12 items-center justify-center rounded-2xl", tone === "green" ? "bg-seal-green/15 text-[#178a4c]" : "bg-[#2a78d6]/10 text-[#2a78d6]")}>{icon}</span>
-        <div className="display mt-6 text-[76px] leading-none tabular-nums">
+        <div className="display mt-6 text-[52px] md:text-[76px] leading-none tabular-nums">
           <CountUp to={value} duration={1.2} trigger="load" />
           <span className="text-[34px] text-muted-foreground">{suffix}</span>
         </div>

@@ -46,18 +46,18 @@ export function Clinic() {
   if (!m) return <SealLoader className="min-h-[70vh]" size={44} />;
   const atRisk = m.cashAtRisk.held.amount + m.cashAtRisk.refusedOpen.amount;
   return (
-    <main className="mx-auto max-w-[1400px] px-6 pb-24 pt-12">
+    <main className="mx-auto max-w-[1400px] px-4 md:px-6 pb-24 pt-12">
       <div className="flex items-center gap-3">
         <p className="text-[13px] font-medium text-muted-foreground">Khalid Al Suwaidi · CFO</p>
       </div>
-      <h1 className="display mt-1 text-[52px] leading-tight">Finance at a glance</h1>
-      <div className="mt-8 grid grid-cols-4 gap-4">
+      <h1 className="display mt-1 text-[34px] md:text-[44px] lg:text-[52px] leading-tight">Finance at a glance</h1>
+      <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Hero label="First-pass acceptance" value={(m.firstPass.rate ?? 0) * 100} decimals={1} suffix="%" sub={`${m.firstPass.claims.toLocaleString()} claims, last 12 months`} />
         <Hero label="Cash at risk" value={atRisk} prefix="AED " compact sub={`${m.cashAtRisk.held.claims} held claims · ${m.cashAtRisk.refusedOpen.lines} refused lines still recoverable`} />
         <Hero label="Cash recovered" value={(m.recovered.history?.amount ?? 0) + (m.recovered.seal?.amount ?? 0)} prefix="AED " compact sub={`${(m.recovered.history?.lines ?? 0) + (m.recovered.seal?.lines ?? 0)} refused lines won back${m.recovered.seal ? ` · AED ${K(m.recovered.seal.amount)} by SEAL` : ""}`} />
         <Hero label="Days to cash" value={m.daysToCash.median ?? 0} suffix=" days" sub={`median · 90th percentile ${m.daysToCash.p90 ?? "—"} days`} />
       </div>
-      <div className="mt-10 grid grid-cols-[1.4fr_1fr] gap-8">
+      <div className="mt-10 grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-6 lg:gap-8">
         <section>
           <h2 className="text-[20px] font-semibold">First-pass acceptance by month</h2>
           <div className="mt-3 card p-5">{trend && <Chart option={trend} height={260} />}</div>
@@ -69,7 +69,7 @@ export function Clinic() {
       </div>
       <section className="mt-10">
         <h2 className="text-[20px] font-semibold">Top refusal reasons by insurer</h2>
-        <div className="mt-3 grid grid-cols-4 gap-4">
+        <div className="mt-3 grid grid-cols-2 lg:grid-cols-4 gap-4">
           {m.byPayer.map((p) => (
             <div key={p.payerId} className="card p-6">
               <div className="flex items-baseline justify-between">
