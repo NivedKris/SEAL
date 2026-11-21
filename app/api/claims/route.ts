@@ -55,7 +55,8 @@ export async function POST(req: Request) {
   return handle(async () => {
     const { encounterId } = z.object({ encounterId: z.string().min(1) }).parse(await req.json());
     const claim = await createClaimForEncounter(encounterId, actorFrom(req, "coder"));
-    after(() => runClaimCheck(claim._id).catch(() => null));
+    const d = await db();
+    after(() => runClaimCheck(claim._id, { database: d }).catch(() => null));
     return { claim };
   });
 }

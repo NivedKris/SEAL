@@ -10,10 +10,12 @@ import { RiskBar, RiskRing, StatusPill, aed, initials, riskBand, riskText } from
 import { motion } from "motion/react";
 import ShinyText from "@/components/ShinyText";
 import { FixPanel } from "./fix-panel";
+import { TraceTerminal } from "./trace-terminal";
+import { CodeChip } from "@/components/shared/code-chip";
 import { cn } from "@/lib/utils";
 
 // ── Shapes coming from /api/claims/[id] and the check stream ─────────────────
-type Hit = {
+export type Hit = {
   ruleId: string;
   title: string;
   family: string;
@@ -27,10 +29,10 @@ type Hit = {
   verified: boolean;
   source: { publisher: string; title: string; url: string };
 };
-type RuleLine = { activityId: string; code: string; label: string; hits: Hit[] };
-type Similar = { claimId: string; score: number; codes: string[]; firstPassRefused: boolean; refused: string[]; fixes: string[] };
-type DocAnswer = { ruleId: string; activityId: string; concept: DocConcept; documented: boolean; evidence: string };
-type Judge = {
+export type RuleLine = { activityId: string; code: string; label: string; hits: Hit[] };
+export type Similar = { claimId: string; score: number; codes: string[]; firstPassRefused: boolean; refused: string[]; fixes: string[]; hospital?: string; clinician?: string; value?: number };
+export type DocAnswer = { ruleId: string; activityId: string; concept: DocConcept; documented: boolean; evidence: string };
+export type Judge = {
   ms: number;
   error?: string;
   lines?: { activityId: string; probability: number; reasons: { text: string; ruleId?: string; pastClaimIds?: string[] }[] }[];
@@ -44,13 +46,14 @@ type Judge = {
   latencyMs?: number;
   fallbackUsed?: boolean;
 };
-type Critic = { ms: number; error?: string; verdict?: string; agreement?: string; issues?: { check: string; activityId?: string; detail: string }[]; note?: string; model?: string; provider?: string; latencyMs?: number; fallbackUsed?: boolean };
-type Routed = { ms: number; route: "hold" | "ready"; riskScore: number; holdReasons: string[]; lineRisk: Record<string, number>; mode: string; agreement: string; lines?: { activityId: string; hits: Hit[] }[] };
-type CheckState = { run: number; rules?: { ms: number; lines: RuleLine[] }; retrieval?: { ms: number; similar: Similar[] }; judge?: Judge; critic?: Critic; routed?: Routed; error?: string };
-type Ev = { seq: number; type: string; at: string; run?: number; stage?: string; [k: string]: unknown };
-type Finding = { _id: string; activityId?: string; stage: string; kind?: string; ruleId?: string; denialCode?: string; insurerNeeds?: string; evidenceSpan?: string; reason?: string; pastClaimIds: string[]; gapConcepts?: DocConcept[]; probability?: number; severity: string };
-type Line = { activityId: string; code: string; label: string; quantity: number; net: number; priorAuthId?: string };
-type Detail = {
+export type Critic = { ms: number; error?: string; verdict?: string; agreement?: string; issues?: { check: string; activityId?: string; detail: string }[]; note?: string; model?: string; provider?: string; latencyMs?: number; fallbackUsed?: boolean };
+export type Routed = { ms: number; route: "hold" | "ready"; riskScore: number; holdReasons: string[]; lineRisk: Record<string, number>; mode: string; agreement: string; lines?: { activityId: string; hits: Hit[] }[] };
+export type HospitalStep = { ms: number; hospital: string; insurer: string; hospitalClaims: number; hospitalRate: number; regionalRate: number; factor: number; insurerFactor?: number; doctor?: { name: string; claims: number; rate: number; clinicRate: number; factor: number }; topCodes: { code: string; n: number; amount: number }[] };
+export type CheckState = { run: number; hospital?: HospitalStep; rules?: { ms: number; lines: RuleLine[] }; retrieval?: { ms: number; similar: Similar[] }; judge?: Judge; critic?: Critic; routed?: Routed; error?: string };
+export type Ev = { seq: number; type: string; at: string; run?: number; stage?: string; [k: string]: unknown };
+export type Finding = { _id: string; activityId?: string; stage: string; kind?: string; ruleId?: string; denialCode?: string; insurerNeeds?: string; evidenceSpan?: string; reason?: string; pastClaimIds: string[]; gapConcepts?: DocConcept[]; probability?: number; severity: string };
+export type Line = { activityId: string; code: string; label: string; quantity: number; net: number; priorAuthId?: string };
+export type Detail = {
   claim: { _id: string; claimNo: string; status: string; net: number; gross: number; riskScore: number | null; liveCheckState: string; createdAt: string; scenario?: string; check?: { run: number; route?: string; mode?: string }; versions: { version: number; lines: Line[]; sentAt?: string; transactionId?: string }[] };
   patient: { name: string; maskedId: string; dob: string; sex: string };
   payer: { name: string };
@@ -73,6 +76,7 @@ function reduce(s: CheckState, e: Ev): CheckState {
   if (e.stage === "judge") return { ...s, judge: e as unknown as Judge };
   if (e.stage === "critic") return { ...s, critic: e as unknown as Critic };
   if (e.stage === "routed") return { ...s, routed: e as unknown as Routed };
+  if (e.stage === "hospital") return { ...s, hospital: e as unknown as HospitalStep };
   if (e.stage === "error") return { ...s, error: e.error as string };
   return s;
 }
@@ -181,27 +185,27 @@ export function ClaimDetail({ id }: { id: string }) {
       </Link>
 
       {/* Hero: who, what, and the live check */}
-      <section className="relative mt-4 overflow-hidden rounded-[36px] bg-[#0b0b0d] p-5 md:p-9 text-white shadow-[0_40px_100px_-40px_rgba(0,0,0,0.7)]">
-        <div className="pointer-events-none absolute -left-24 -top-32 size-[420px] rounded-full bg-seal-green/20 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-40 right-10 size-[380px] rounded-full bg-[#2a78d6]/20 blur-3xl" />
+      <section className="card relative mt-4 overflow-hidden !rounded-[36px] p-5 md:p-9 text-ink">
+        <div className="pointer-events-none absolute -left-24 -top-32 size-[420px] rounded-full bg-seal-mint/50 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-40 right-10 size-[380px] rounded-full bg-[#f4e6cf]/60 blur-3xl" />
         <div className="relative flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
           <div className="flex items-center gap-4 sm:gap-5">
-            <span className="flex size-14 shrink-0 sm:size-20 items-center justify-center rounded-full bg-white/10 text-[26px] font-semibold ring-1 ring-white/15">{initials(detail.patient.name)}</span>
+            <span className="flex size-14 shrink-0 sm:size-20 items-center justify-center rounded-full bg-white/70 text-[26px] font-semibold ring-1 ring-ink/15">{initials(detail.patient.name)}</span>
             <div>
               <div className="flex items-center gap-3">
                 <h1 className="display text-[30px] md:text-[44px] leading-tight">{detail.patient.name}</h1>
-                <StatusPill status={c.status} className="!bg-white/10 !text-white" />
+                <StatusPill status={c.status} className="!bg-white/70 !text-ink" />
               </div>
-              <p className="mt-1 text-[16px] text-white/60">
+              <p className="mt-1 text-[16px] text-ink/60">
                 {detail.provider.name} · {detail.payer.name} · {when(detail.encounter.start)}
               </p>
-              <p className="mt-1 font-mono text-[13px] text-white/35">{c.claimNo}</p>
+              <p className="mt-1 font-mono text-[13px] text-ink/35">{c.claimNo}</p>
             </div>
           </div>
           <div className="flex items-center gap-6 lg:gap-8">
             <div className="text-right">
-              <div className="text-[14px] text-white/50">Claim value</div>
-              <div className="whitespace-nowrap text-[26px] font-bold tabular-nums sm:text-[36px]">{aed(c.net)}</div>
+              <div className="text-[14px] text-ink/50">Claim value</div>
+              <div className="dot whitespace-nowrap text-[30px] text-seal-deep sm:text-[42px]">{aed(c.net)}</div>
             </div>
             <div className="rounded-full bg-white p-1.5">
               <RiskRing p={running && !check.routed ? null : claimRisk} size={150} />
@@ -210,6 +214,8 @@ export function ClaimDetail({ id }: { id: string }) {
         </div>
         <Pipeline check={check} running={running} />
       </section>
+
+      <TraceTerminal detail={detail} check={check} running={running} events={events} />
 
       <div className="mt-8 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 lg:gap-8">
         <div className="min-w-0 space-y-8">
@@ -275,31 +281,31 @@ function Pipeline({ check, running }: { check: CheckState; running: boolean }) {
   return (
     <div className="relative mt-9">
       <div className="mb-4 flex items-center justify-between text-[14px]">
-        {running && !check.routed ? <ShinyText text="SEAL is checking this claim…" color="#8e8e93" shineColor="#ffffff" speed={1.5} className="text-[16px] font-medium" /> : <span className="text-[16px] font-medium text-white/70">{check.routed ? `Checked in ${fmt(check.routed.ms)}` : "Not checked yet"}</span>}
+        {running && !check.routed ? <ShinyText text="SEAL is checking this claim…" color="#5f6f6b" shineColor="#1f2b29" speed={1.5} className="text-[16px] font-medium" /> : <span className="text-[16px] font-medium text-ink/70">{check.routed ? `Checked in ${fmt(check.routed.ms)}` : "Not checked yet"}</span>}
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {steps.map((s, i) => {
           const active = running && i === firstPending;
           return (
-            <motion.div key={s.key} initial={false} animate={{ opacity: s.done || active ? 1 : 0.45 }} className={cn("rounded-2xl p-4 ring-1 transition-colors", s.done ? (s.failed ? "bg-amber-400/10 ring-amber-300/30" : "bg-white/[0.07] ring-white/10") : active ? "bg-white/[0.05] ring-seal-green/50" : "ring-white/10")}>
+            <motion.div key={s.key} initial={false} animate={{ opacity: s.done || active ? 1 : 0.45 }} className={cn("rounded-2xl p-4 ring-1 transition-colors", s.done ? (s.failed ? "bg-seal-amber/10 ring-seal-amber/30" : "bg-white/60 ring-ink/10") : active ? "bg-white/60 ring-seal-deep/40" : "ring-ink/10")}>
               <div className="flex items-center gap-2.5">
-                <span className={cn("flex size-6 items-center justify-center rounded-full", s.done ? (s.failed ? "bg-amber-400 text-black" : "bg-seal-green text-black") : "ring-1 ring-white/25")}>
-                  {s.done ? s.failed ? <X className="size-3.5" /> : <Check className="size-3.5" /> : active ? <Loader2 className="size-3.5 animate-spin text-seal-green" /> : null}
+                <span className={cn("flex size-6 items-center justify-center rounded-full", s.done ? (s.failed ? "bg-amber-400 text-black" : "bg-seal-green text-black") : "ring-1 ring-ink/25")}>
+                  {s.done ? s.failed ? <X className="size-3.5" /> : <Check className="size-3.5" /> : active ? <Loader2 className="size-3.5 animate-spin text-seal-deep" /> : null}
                 </span>
                 <span className="text-[16px] font-semibold">{s.label}</span>
-                <span className="ml-auto font-mono text-[12px] text-white/40 tabular-nums">{fmt(s.ms)}</span>
+                <span className="ml-auto font-mono text-[12px] text-ink/40 tabular-nums">{fmt(s.ms)}</span>
               </div>
-              <p className="mt-2 text-[13px] text-white/55">{s.detail}</p>
+              <p className="mt-2 text-[13px] text-ink/55">{s.detail}</p>
             </motion.div>
           );
         })}
       </div>
       {check.error && <p className="mt-4 rounded-2xl bg-risk-high/20 px-5 py-3 text-[14px]">The check could not finish, so the claim is held for a person.</p>}
       {check.routed && (
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className={cn("mt-4 rounded-2xl px-4 md:px-6 py-5", check.routed.route === "hold" ? "bg-[#ff453a]/15" : "bg-seal-green/15")}>
-          <div className={cn("text-[24px] font-bold", check.routed.route === "hold" ? "text-[#ff6961]" : "text-seal-green")}>{check.routed.route === "hold" ? "Held before sending" : "Ready to send"}</div>
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className={cn("mt-4 rounded-2xl px-4 md:px-6 py-5", check.routed.route === "hold" ? "bg-[#c2473c]/10" : "bg-seal-green/15")}>
+          <div className={cn("text-[24px] font-bold", check.routed.route === "hold" ? "text-[#b23b31]" : "text-seal-deep")}>{check.routed.route === "hold" ? "Held before sending" : "Ready to send"}</div>
           {check.routed.holdReasons.length > 0 ? (
-            <ul className="mt-2 space-y-1.5 text-[16px] text-white/85">
+            <ul className="mt-2 space-y-1.5 text-[16px] text-ink/85">
               {check.routed.holdReasons.map((r) => (
                 <li key={r} className="flex gap-2.5">
                   <span className="mt-[10px] size-1.5 shrink-0 rounded-full bg-white/60" />
@@ -308,7 +314,7 @@ function Pipeline({ check, running }: { check: CheckState; running: boolean }) {
               ))}
             </ul>
           ) : (
-            <p className="mt-1 text-[16px] text-white/70">No rule is broken and SEAL expects it to be paid.</p>
+            <p className="mt-1 text-[16px] text-ink/70">No rule is broken and SEAL expects it to be paid.</p>
           )}
         </motion.div>
       )}
@@ -326,7 +332,7 @@ function Lines({ lines, rules, risk, remittance }: { lines: Line[]; rules?: Rule
           const paid = remittance?.lines.find((x) => x.activityId === l.activityId);
           return (
             <div key={l.activityId} className="grid grid-cols-2 md:grid-cols-[64px_1fr_120px_180px] items-center gap-4 border-b border-border/70 px-5 py-3.5 last:border-0">
-              <span className="font-mono text-[13px]">{l.code}</span>
+              <span><CodeChip code={l.code} /></span>
               <div className="min-w-0">
                 <div className="text-[14px] font-medium">
                   {l.label}
@@ -335,9 +341,7 @@ function Lines({ lines, rules, risk, remittance }: { lines: Line[]; rules?: Rule
                 </div>
                 <div className="mt-1 flex flex-wrap gap-1.5">
                   {hits.map((h) => (
-                    <span key={h.ruleId} className={cn("rounded-full px-2 py-0.5 text-[11px]", h.fired === true ? "bg-foreground text-background" : "ring-1 ring-border text-muted-foreground")} title={h.title}>
-                      {h.denialCode}
-                    </span>
+                    <CodeChip key={h.ruleId} code={h.denialCode} className="text-[11px]" />
                   ))}
                   {paid && (
                     <span className={cn("rounded-full px-2 py-0.5 text-[11px]", paid.denialCode ? "bg-risk-high/10 text-risk-high" : "bg-risk-low/10 text-risk-low")}>
@@ -555,9 +559,9 @@ function Note({ detail, quotes }: { detail: Detail; quotes: string[] }) {
             <dt className="text-[12px] font-medium text-muted-foreground">Diagnoses (doctor / coder)</dt>
             <dd className="mt-1 flex flex-wrap gap-1.5">
               {detail.diagnoses.map((x) => (
-                <span key={x.icd10} className="rounded-full bg-secondary px-2.5 py-0.5 text-[12px]">
-                  <span className="font-mono">{x.icd10}</span> {x.description}
-                  {x.primary ? " · principal" : ""}
+                <span key={x.icd10} className="inline-flex items-center gap-1.5 text-[12px]">
+                  <CodeChip code={x.icd10} /> {x.description}
+                  {x.primary ? " · main" : ""}
                 </span>
               ))}
             </dd>
@@ -644,13 +648,20 @@ function SimilarClaims({ similar }: { similar?: Similar[] }) {
       <div className="text-[13px] font-medium">Similar past claims</div>
       <p className="text-[12px] text-muted-foreground">Same insurer, nearest by meaning. The judge cites these.</p>
       <ul className="mt-3 space-y-2">
-        {similar.slice(0, 6).map((s) => (
+        {similar.slice(0, 8).map((s) => (
           <li key={s.claimId} className="flex items-start gap-2 text-[12px]">
             <span className={cn("mt-1 size-1.5 shrink-0 rounded-full", s.firstPassRefused ? "bg-risk-high" : "bg-risk-low")} />
             <div className="min-w-0">
-              <Link href={`/billing/claims/${s.claimId}`} className="font-mono hover:underline">
-                {s.claimId}
-              </Link>{" "}
+              {s.hospital ? (
+                <span>
+                  <span className="mr-1 rounded-full bg-seal-mint/60 px-1.5 py-0.5 text-[9.5px] font-medium tracking-[0.08em] text-[#237a4b]">{s.hospital.toUpperCase()}</span>
+                  <span>{s.clinician} · AED {Math.round(s.value ?? 0)}</span>
+                </span>
+              ) : (
+                <Link href={`/billing/claims/${s.claimId}`} className="font-mono hover:underline">
+                  {s.claimId}
+                </Link>
+              )}{" "}
               <span className="text-muted-foreground">{Math.round(s.score * 100)}% similar</span>
               <div className="truncate text-muted-foreground">{s.firstPassRefused ? `Refused: ${s.refused.join("; ")}` : "Paid first time"}</div>
             </div>

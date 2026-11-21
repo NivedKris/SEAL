@@ -1,4 +1,5 @@
 import "server-only";
+import { adjust, hospitalPrior } from "@/lib/hospital/prior";
 import type { Db } from "mongodb";
 import { db as getDb } from "@/lib/db/mongo";
 import { emit } from "@/lib/db/events";
@@ -234,6 +235,12 @@ export async function runClaimCheck(claimId: string, opts: { database?: Db; forc
         findings.push({ ...base, _id: `${claimId}-r${run}-${findings.length + 1}`, orderId, activityId: l.activityId, stage: "claim_judge", ruleId: r.ruleId, pastClaimIds: r.pastClaimIds ?? [], evidenceSpan: evid, severity: p >= 0.6 ? "high" : p >= 0.3 ? "medium" : "low", probability: lineRisk[l.activityId], status: "open", kind: "risk", reason: r.text, aiCallId: judgeCall?._id });
       }
     }
+    // ── 6b. This hospital's own history with this insurer (hospitals with their own data only) ──
+    const hospital = await hospitalPrior(d, claim.payerId, claim.providerId).catch(() => null);
+    if (hospital) {
+      for (const k of Object.keys(lineRisk)) lineRisk[k] = Math.round(adjust(lineRisk[k], hospital.factor) * 1000) / 1000;
+      await step("hospital", { ...hospital });
+    }
     const riskScore = Math.round((1 - Object.values(lineRisk).reduce((s, p) => s * (1 - p), 1)) * 1000) / 1000;
     if (judges?.shadow === "trained_model" && mode !== "trained_model") {
       const t = await trainedRisk();
@@ -250,7 +257,7 @@ export async function runClaimCheck(claimId: string, opts: { database?: Db; forc
     const finishedAt = dubaiIso();
     await d.collection(C.claims).updateOne(
       { _id: claimId as never },
-      { $set: { status: route, riskScore, "check.finishedAt": finishedAt, "check.mode": mode, "check.route": route, "check.holdReasons": holdReasons, "check.lineRisk": lineRisk, "check.agreement": agreement, "check.aiCallIds": aiCallIds, ...(shadowRisk !== undefined ? { "check.shadowRiskScore": shadowRisk } : {}), ...(judgeError ? { "check.error": judgeError } : {}) } },
+      { $set: { status: route, riskScore, "check.finishedAt": finishedAt, "check.mode": mode, "check.route": route, "check.holdReasons": holdReasons, "check.lineRisk": lineRisk, "check.agreement": agreement, ...(hospital ? { "check.hospital": hospital } : {}), "check.aiCallIds": aiCallIds, ...(shadowRisk !== undefined ? { "check.shadowRiskScore": shadowRisk } : {}), ...(judgeError ? { "check.error": judgeError } : {}) } },
     );
     const ms = Date.now() - t0;
     // Final rule results (after the documentation answers) replace the first-pass view in the claim screen.

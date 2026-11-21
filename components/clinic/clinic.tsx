@@ -12,6 +12,7 @@ type M = {
   daysToCash: { median: number | null; p90: number | null };
   byOrderType: { kind: string; lines: number; refusalRate: number; lost: number }[];
   byPayer: { payerId: string; name: string; top: { code: string; n: number; amount: number }[]; lost: number }[];
+  hospital: { name: string; claims: number; from: string; to: string; submitted: number; rejected: number; unsettled: number } | null;
 };
 const K = (n: number) => (n >= 1e6 ? `${(n / 1e6).toFixed(2)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(0)}k` : n.toFixed(0));
 const MONTH = (m: string) => new Date(`${m}-01T00:00:00Z`).toLocaleString("en-GB", { month: "short", year: "2-digit" });
@@ -36,7 +37,7 @@ export function Clinic() {
     () =>
       m && {
         grid: { left: 80, right: 40, top: 8, bottom: 24 },
-        tooltip: { trigger: "axis", axisPointer: { type: "shadow" }, formatter: (ps: { dataIndex: number }[]) => { const x = m.byOrderType[ps[0].dataIndex]; return `${x.kind}<br/>${(x.refusalRate * 100).toFixed(1)}% of ${x.lines.toLocaleString()} lines refused<br/>AED ${x.lost.toLocaleString()} refused`; } },
+        tooltip: { trigger: "axis", axisPointer: { type: "shadow" }, formatter: (ps: { dataIndex: number }[]) => { const x = m.byOrderType[ps[0].dataIndex]; return m.hospital ? `${x.kind}<br/>${(x.refusalRate * 100).toFixed(1)}% of refused money<br/>AED ${x.lost.toLocaleString()} · ${x.lines.toLocaleString()} claims` : `${x.kind}<br/>${(x.refusalRate * 100).toFixed(1)}% of ${x.lines.toLocaleString()} lines refused<br/>AED ${x.lost.toLocaleString()} refused`; } },
         xAxis: { type: "value", ...axisBase, axisLabel: { ...axisBase.axisLabel, formatter: (v: number) => `${Math.round(v * 100)}%` } },
         yAxis: { type: "category", inverse: true, data: m.byOrderType.map((x) => x.kind), ...axisBase, splitLine: { show: false } },
         series: [{ name: "Refusal rate", type: "bar", data: m.byOrderType.map((x) => x.refusalRate), barMaxWidth: 16, itemStyle: { color: VIZ.s1, borderRadius: [0, 4, 4, 0] }, label: { show: true, position: "right", color: VIZ.muted, fontSize: 11, formatter: (p: { value: number }) => `${(p.value * 100).toFixed(1)}%` } }],
@@ -51,6 +52,12 @@ export function Clinic() {
         <p className="text-[13px] font-medium text-muted-foreground">Khalid Al Suwaidi · CFO</p>
       </div>
       <h1 className="display mt-1 text-[34px] md:text-[44px] lg:text-[52px] leading-tight">Finance at a glance</h1>
+      {m.hospital && (
+        <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-white/60 px-3 py-1 text-[12px] font-light text-ink/70 ring-1 ring-ink/[0.07]">
+          <span className="size-1.5 rounded-full bg-seal-deep" />
+          From {m.hospital.name}&apos;s own {m.hospital.claims.toLocaleString("en")} claims · AED {Math.round(m.hospital.submitted / 1000).toLocaleString("en")}k billed, AED {Math.round(m.hospital.rejected / 1000).toLocaleString("en")}k refused
+        </p>
+      )}
       <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Hero label="First-pass acceptance" value={(m.firstPass.rate ?? 0) * 100} decimals={1} suffix="%" sub={`${m.firstPass.claims.toLocaleString()} claims, last 12 months`} />
         <Hero label="Cash at risk" value={atRisk} prefix="AED " compact sub={`${m.cashAtRisk.held.claims} held claims · ${m.cashAtRisk.refusedOpen.lines} refused lines still recoverable`} />
@@ -63,7 +70,7 @@ export function Clinic() {
           <div className="mt-3 card p-5">{trend && <Chart option={trend} height={260} />}</div>
         </section>
         <section>
-          <h2 className="text-[20px] font-semibold">Refusal rate by order type</h2>
+          <h2 className="text-[20px] font-semibold">{m.hospital ? "Where refused money goes, by reason" : "Refusal rate by order type"}</h2>
           <div className="mt-3 card p-5">{types && <Chart option={types} height={260} />}</div>
         </section>
       </div>
@@ -97,7 +104,7 @@ function Hero({ label, value, sub, prefix = "", suffix = "", decimals = 0, compa
   return (
     <div className="card p-7">
       <div className="text-[13px] text-muted-foreground">{label}</div>
-      <div className="mt-1 text-[38px] font-semibold leading-tight tracking-tight tabular-nums">
+      <div className="dot mt-1 text-[40px] leading-tight">
         {prefix}
         <CountUp to={v} decimals={compact && value >= 1000 ? 0 : decimals} duration={1} trigger="load" />
         {compact && value >= 1000 ? "k" : ""}

@@ -140,11 +140,11 @@ export function BillingQueues() {
       <div className="pointer-events-none fixed bottom-8 right-8 z-50 space-y-3">
         <AnimatePresence>
           {toasts.map((t) => (
-            <motion.div key={t.id} initial={{ opacity: 0, y: 20, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, x: 40 }} className="flex items-center gap-4 rounded-3xl bg-[#07130d] px-4 md:px-6 py-4 text-white shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)] ring-1 ring-seal-green/40">
+            <motion.div key={t.id} initial={{ opacity: 0, y: 20, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, x: 40 }} className="card flex items-center gap-4 !rounded-3xl px-4 py-4 text-ink md:px-6">
               <span className={cn("flex size-11 items-center justify-center rounded-full", t.paid ? "bg-seal-green text-[#06120b]" : "bg-[#ff9f0a] text-black")}>{t.paid ? <CheckCircle2 className="size-6" /> : "!"}</span>
               <div>
                 <div className="text-[17px] font-semibold">{t.paid ? "Paid" : "Partly refused"} · {aed(t.amount)}</div>
-                <div className="font-mono text-[12px] text-white/50">{t.claimNo}</div>
+                <div className="font-mono text-[12px] text-ink/50">{t.claimNo}</div>
               </div>
             </motion.div>
           ))}
@@ -187,7 +187,7 @@ function Journey({ rows }: { rows: Row[] }) {
             <div className="mt-3 h-2 overflow-hidden rounded-full bg-black/[0.05]">
               <motion.div className="h-full rounded-full bg-gradient-to-r from-seal-green to-[#9ef0c4]" animate={{ width: `${Math.max(8, progress * 100)}%` }} transition={{ duration: 0.8 }} />
             </div>
-            <div className="mt-3 text-[14px] text-muted-foreground">{left == null ? "Waiting for the insurer" : left > 0 ? `Answer expected in ${left >= 60 ? `${Math.floor(left / 60)} min ${left % 60}s` : `${left}s`}` : "Answer arriving now…"}</div>
+            <div className="mt-3 text-[14px] text-muted-foreground">{left == null ? "Waiting for the insurer" : left > 0 ? <>Answer expected in <span className="dot text-[18px] text-seal-green">{`${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`}</span></> : "Answer arriving now…"}</div>
           </Link>
         );
       })}
@@ -210,18 +210,18 @@ function PaidList({ rows }: { rows: Row[] }) {
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
       {rows.map((c, i) => (
         <motion.div key={c._id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-          <Link href={`/billing/claims/${c._id}`} className="relative block overflow-hidden rounded-[28px] bg-[#07130d] p-7 text-white ring-1 ring-seal-green/25 transition-transform hover:-translate-y-0.5">
+          <Link href={`/billing/claims/${c._id}`} className="relative block overflow-hidden card !rounded-[28px] p-7 text-ink transition-transform hover:-translate-y-0.5">
             <div className="pointer-events-none absolute -right-16 -top-16 size-48 rounded-full bg-seal-green/20 blur-3xl" />
             <div className="relative flex items-center justify-between">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-seal-green px-3 py-1 text-[13px] font-semibold text-[#06120b]">
                 <CheckCircle2 className="size-4" /> Paid
               </span>
-              <span className="text-[13px] text-white/45">{c.paidAt ? when(c.paidAt) : ""}</span>
+              <span className="text-[13px] text-ink/45">{c.paidAt ? when(c.paidAt) : ""}</span>
             </div>
             <div className="relative mt-6 text-[22px] font-semibold">{c.patientName}</div>
-            <div className="relative text-[14px] text-white/55">{c.providerName} · {c.payerName}</div>
+            <div className="relative text-[14px] text-ink/55">{c.providerName} · {c.payerName}</div>
             <div className="display relative mt-5 text-[28px] md:text-[40px] leading-none">{aed(c.paidAmount ?? c.net)}</div>
-            <div className="relative mt-2 text-[13px] text-white/45">first time, no refusals</div>
+            <div className="relative mt-2 text-[13px] text-ink/45">first time, no refusals</div>
           </Link>
         </motion.div>
       ))}
@@ -277,7 +277,7 @@ function ClaimCard({ r }: { r: Row }) {
     <div className="flex h-full w-full flex-col justify-between bg-white p-5 md:p-8 text-foreground">
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-4">
-          <span className="flex size-16 items-center justify-center rounded-full bg-gradient-to-br from-[#1d1d1f] to-[#55555a] text-[22px] font-semibold text-white">{initials(r.patientName)}</span>
+          <span className="flex size-16 items-center justify-center rounded-full bg-gradient-to-br from-white via-white/80 to-seal-mint/80 text-[22px] font-extralight text-ink ring-1 ring-ink/10">{initials(r.patientName)}</span>
           <div>
             <div className="text-[28px] font-bold leading-tight tracking-tight">{r.patientName}</div>
             <div className="text-[15px] text-muted-foreground">{r.providerName ?? "Seabreeze Specialty Hospital"}</div>
@@ -287,7 +287,7 @@ function ClaimCard({ r }: { r: Row }) {
       </div>
       <div>
         <div className="text-[14px] text-muted-foreground">Claim value</div>
-        <div className="text-[30px] md:text-[44px] font-bold tracking-tight tabular-nums">{aed(r.net)}</div>
+        <div className="dot text-[32px] md:text-[46px]">{aed(r.net)}</div>
         <div className="mt-1 flex items-center gap-2 text-[15px]">
           <ShieldCheck className="size-4 text-[#178a4c]" /> {r.payerName}
         </div>

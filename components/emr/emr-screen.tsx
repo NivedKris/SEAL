@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 type Order = { _id: string; code: string; label: string; kind: string; quantity: number; justificationStatus: string };
 type Dx = { _id: string; icd10: string; description?: string; primary: boolean };
 type Enc = {
-  encounter: { _id: string; complaint: string; findings: string; plan?: string; start: string; status: string; type: number; scenario?: string; theme?: string };
+  encounter: { _id: string; providerId: string; complaint: string; findings: string; plan?: string; start: string; status: string; type: number; scenario?: string; theme?: string };
   patient: { name: string; sex: string; age: number; maskedId: string; nationality: string };
   insurance: { payer: string; plan: string; memberNo: string; validTo: string; copayPct: number };
   provider: { name: string; specialty: string };
@@ -41,7 +41,7 @@ type Card = {
 };
 type OrderResult = { orderId: string; code: string; label: string; kind: string; status: "justified" | "at_risk" | "checking"; cards: Card[] };
 type Check = { mode: "rules" | "live" | "deep"; ms: number; orders: OrderResult[]; model?: string; provider?: string; aiError?: string };
-type OpenEnc = { _id: string; patientName?: string; scenario?: string; theme?: string; start: string; providerName?: string; complaint?: string };
+type OpenEnc = { _id: string; patientName?: string; scenario?: string; theme?: string; start: string; providerId: string; providerName?: string; providerSpecialty?: string; complaint?: string };
 
 const RANK = { rules: 0, live: 1, deep: 2 } as const;
 const GROUPS: { key: string; label: string; kinds: string[] }[] = [
@@ -64,7 +64,9 @@ async function api<T>(url: string, init?: RequestInit): Promise<T> {
 export function EmrScreen() {
   const router = useRouter();
   const params = useSearchParams();
-  const [list, setList] = useState<OpenEnc[]>([]);
+  const [all, setAll] = useState<OpenEnc[]>([]);
+  const doctor = params.get("providerId");
+  const list = doctor ? all.filter((x) => x.providerId === doctor) : all;
   const id = params.get("e") ?? list[0]?._id ?? null;
   const [data, setData] = useState<Enc | null>(null);
   const [note, setNote] = useState({ complaint: "", findings: "", plan: "" });
@@ -79,7 +81,7 @@ export function EmrScreen() {
   const timers = useRef<{ live?: ReturnType<typeof setTimeout>; deep?: ReturnType<typeof setTimeout> }>({});
 
   useEffect(() => {
-    api<{ encounters: OpenEnc[] }>("/api/encounters?status=open").then((r) => setList(r.encounters)).catch(() => {});
+    api<{ encounters: OpenEnc[] }>("/api/encounters?status=open").then((r) => setAll(r.encounters)).catch(() => {});
   }, []);
 
   const load = useCallback(async () => {
@@ -176,7 +178,7 @@ export function EmrScreen() {
     setError(null);
     try {
       await api(`/api/emr/encounters/${id}`, { method: "PATCH", body: JSON.stringify(note) });
-      const r = await api<{ claim: { _id: string } }>(`/api/encounters/${id}/sign`, { method: "POST", headers: { "x-seal-user": "dr-omar-haddad" } });
+      const r = await api<{ claim: { _id: string } }>(`/api/encounters/${id}/sign`, { method: "POST", headers: { "x-seal-user": data?.encounter.providerId ?? "dr-on-duty" } });
       router.push(`/billing/claims/${r.claim._id}`);
     } catch (e) {
       setError((e as Error).message);
@@ -192,24 +194,30 @@ export function EmrScreen() {
 
   return (
     <main className="mx-auto grid max-w-[1560px] grid-cols-1 gap-6 px-4 py-6 md:px-6 md:py-8 lg:grid-cols-[240px_1fr] xl:grid-cols-[260px_1fr_400px]">
-      {/* ── Today's clinic ── */}
+      {/* ── Today's clinic: pick a doctor, then a patient ── */}
       <aside className="min-w-0 top-[88px] self-start lg:sticky">
-        <div className="px-2 text-[13px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Today&apos;s clinic</div>
-        <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-2 lg:mx-0 lg:block lg:space-y-1.5 lg:overflow-visible lg:px-0 lg:pb-0">
+        <DoctorRail all={all} doctor={doctor} onPick={(pid) => router.push(pid ? `/emr?providerId=${pid}` : "/emr")} />
+        <div className="eyebrow mt-6 px-2">{doctor ? "Their patients today" : "Everyone's patients today"}</div>
+        <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-2 lg:mx-0 lg:block lg:max-h-[calc(100vh-330px)] lg:space-y-1.5 lg:overflow-y-auto lg:px-0 lg:pb-0">
           {list.map((x) => (
-            <button key={x._id} onClick={() => router.push(`/emr?e=${x._id}`)} className={cn("flex w-[210px] shrink-0 items-center gap-3 rounded-2xl px-3 py-3 text-left transition-all lg:w-full", x._id === id ? "bg-white shadow-[0_8px_30px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.06]" : "hover:bg-white/60")}>
-              <span className={cn("shrink-0 rounded-full p-[2.5px]", x._id === id ? "bg-gradient-to-tr from-seal-green via-[#9ef0c4] to-[#2a78d6] shadow-[0_0_18px_-4px_rgba(62,207,127,0.8)]" : "bg-gradient-to-tr from-seal-green/70 to-[#2a78d6]/60")}>
-                <span className={cn("flex size-10 items-center justify-center rounded-full border-2 border-white text-[13px] font-semibold", x._id === id ? "bg-foreground text-background" : "bg-[#f1f1f4]")}>{initials(x.patientName)}</span>
+            <button key={x._id} onClick={() => router.push(`/emr?${doctor ? `providerId=${doctor}&` : ""}e=${x._id}`)} className={cn("flex w-[230px] shrink-0 items-center gap-3 rounded-2xl px-3 py-3 text-left transition-all lg:w-full", x._id === id ? "bg-white/80 shadow-[0_0_0_1px_rgba(31,43,41,0.07),0_10px_30px_-14px_rgba(31,43,41,0.3)]" : "hover:bg-white/50")}>
+              <span className={cn("shrink-0 rounded-full p-[2px]", x._id === id ? "bg-gradient-to-tr from-seal-deep via-seal-mint to-white" : "bg-gradient-to-tr from-seal-mint to-white")}>
+                <span className="flex size-10 items-center justify-center rounded-full border-2 border-white bg-gradient-to-br from-white to-[#eaf1ee] text-[13px] font-normal text-ink">{initials(x.patientName)}</span>
               </span>
               <span className="min-w-0">
-                <span className="block truncate text-[15px] font-semibold">{x.patientName}</span>
-                <span className="block truncate text-[12px] text-muted-foreground">
+                <span className="block truncate text-[15px] font-normal">{x.patientName}</span>
+                <span className="block truncate text-[12px] font-light text-ink/55">
                   {time(x.start)} · {reason(x)}
                 </span>
+                {!doctor && x.providerName && (
+                  <span className="mt-1 inline-flex max-w-full items-center gap-1 truncate rounded-full bg-white/70 px-2 py-0.5 text-[10.5px] font-light text-ink/70 ring-1 ring-ink/[0.07]">
+                    {x.providerName} · <span className="capitalize">{(x.providerSpecialty ?? "").replace(/_/g, " ")}</span>
+                  </span>
+                )}
               </span>
             </button>
           ))}
-          {list.length === 0 && <p className="px-2 text-[14px] text-muted-foreground">No patients waiting.</p>}
+          {list.length === 0 && <p className="px-2 text-[14px] font-light text-ink/55">No patients waiting.</p>}
         </div>
       </aside>
 
@@ -222,7 +230,7 @@ export function EmrScreen() {
             <motion.div key={data.encounter._id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }} className="card relative overflow-hidden p-5 md:p-8">
               <div className="pointer-events-none absolute -right-24 -top-24 size-72 rounded-full bg-seal-green/10 blur-3xl" />
               <div className="relative flex flex-col items-start gap-5 sm:flex-row sm:gap-6">
-                <span className="flex size-20 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#1d1d1f] to-[#55555a] text-[26px] font-semibold text-white shadow-xl">{initials(data.patient.name)}</span>
+                <span className="flex size-20 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-white via-white/80 to-seal-mint/80 text-[26px] font-extralight text-ink shadow-[inset_0_-10px_20px_rgba(31,43,41,0.06),0_14px_40px_-16px_rgba(31,43,41,0.35)] ring-1 ring-ink/10">{initials(data.patient.name)}</span>
                 <div className="min-w-0 flex-1">
                   <h1 className="display text-[28px] md:text-[40px] leading-tight">{data.patient.name}</h1>
                   <div className="mt-2 flex flex-wrap gap-2 text-[14px]">
@@ -237,7 +245,8 @@ export function EmrScreen() {
                   </div>
                 </div>
                 <div className="sm:text-right">
-                  <div className="text-[16px] font-semibold">{data.provider.name}</div>
+                  <div className="eyebrow sm:text-right">Doctor</div>
+                  <div className="mt-1 text-[16px] font-normal">{data.provider.name}</div>
                   <div className="text-[13px] capitalize text-muted-foreground">{data.provider.specialty.replace(/_/g, " ")}</div>
                   <div className="mt-1 text-[13px] text-muted-foreground">{new Date(data.encounter.start).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Dubai" })}</div>
                 </div>
@@ -336,24 +345,24 @@ export function EmrScreen() {
 
       {/* ── SEAL ── */}
       <aside className="top-[88px] self-start lg:col-span-2 xl:sticky xl:col-span-1">
-        <div className="relative overflow-hidden rounded-[30px] bg-[#0b0b0d] p-6 text-white shadow-[0_30px_80px_-30px_rgba(0,0,0,0.6)]">
+        <div className="card relative overflow-hidden !rounded-[30px] p-6 text-ink">
           <div className="pointer-events-none absolute -left-20 -top-28 size-72 rounded-full bg-seal-green/25 blur-3xl" />
           <div className="relative flex items-center justify-between">
-            <span className="text-white">
+            <span className="text-ink">
               <SealLogo height={22} />
             </span>
-            {anyBusy ? <ShinyText text="checking" color="#8e8e93" shineColor="#ffffff" speed={1.6} className="text-[13px]" /> : <span className="text-[13px] text-white/50">watching</span>}
+            {anyBusy ? <ShinyText text="checking" color="#5f6f6b" shineColor="#1f2b29" speed={1.6} className="text-[13px]" /> : <span className="text-[13px] text-ink/50">watching</span>}
           </div>
           <div className="relative mt-6 flex items-center gap-4">
             <Ring total={active.length} risk={atRisk} pending={!check} />
             <div>
               <div className="text-[26px] font-semibold leading-tight">{!check ? "Reading the note…" : atRisk ? `${atRisk} at risk` : "All clear"}</div>
-              <div className="text-[14px] text-white/55">
+              <div className="text-[14px] text-ink/55">
                 {active.length} order{active.length === 1 ? "" : "s"} checked{check?.mode === "deep" ? " in depth" : ""}
               </div>
             </div>
           </div>
-          {check?.aiError && <p className="relative mt-3 text-[12px] text-amber-300/90">AI check paused; insurer rules still applied.</p>}
+          {check?.aiError && <p className="relative mt-3 text-[12px] text-[#a86f0e]/90">AI check paused; insurer rules still applied.</p>}
 
           <div className="relative mt-6 max-h-[calc(100vh-330px)] space-y-3 overflow-y-auto pr-1">
             <AnimatePresence initial={false}>
@@ -378,15 +387,15 @@ export function EmrScreen() {
                     <Check className="size-3.5" />
                   </span>
                   <div className="text-[14px]">
-                    <div className="font-semibold text-seal-green">Resolved</div>
-                    <div className="text-white/70">{r.order}</div>
+                    <div className="font-semibold text-seal-deep">Resolved</div>
+                    <div className="text-ink/70">{r.order}</div>
                   </div>
                 </motion.div>
               ))}
             </AnimatePresence>
             {check && atRisk === 0 && resolved.length === 0 && (
-              <div className="flex items-center gap-3 rounded-2xl bg-white/[0.06] px-4 py-4 text-[15px] text-white/80">
-                <Sparkles className="size-5 text-seal-green" /> Every order is supported by the note.
+              <div className="flex items-center gap-3 rounded-2xl bg-white/60 px-4 py-4 text-[15px] text-ink/80">
+                <Sparkles className="size-5 text-seal-deep" /> Every order is supported by the note.
               </div>
             )}
           </div>
@@ -499,6 +508,43 @@ function Template({ template, onAdd }: { template: string; onAdd: (text: string)
       <button disabled={!filled} onClick={() => onAdd(parts.map((p, i) => p + (vals[i] ?? "")).join(""))} className="mt-3 rounded-full bg-foreground px-4 py-1.5 text-[13px] font-semibold text-background disabled:opacity-25">
         Add to my note
       </button>
+    </div>
+  );
+}
+
+/** Doctors with patients today: initials in a glass pebble, with their count. "All" first. */
+function DoctorRail({ all, doctor, onPick }: { all: OpenEnc[]; doctor: string | null; onPick: (providerId: string | null) => void }) {
+  const docs = new Map<string, { id: string; name: string; specialty: string; n: number }>();
+  for (const x of all) {
+    const d = docs.get(x.providerId) ?? { id: x.providerId, name: x.providerName ?? x.providerId, specialty: (x.providerSpecialty ?? "").replace(/_/g, " "), n: 0 };
+    d.n++;
+    docs.set(x.providerId, d);
+  }
+  const list = [...docs.values()].sort((a, b) => a.name.localeCompare(b.name));
+  const chosen = doctor ? docs.get(doctor) : null;
+  return (
+    <div>
+      <div className="eyebrow px-2">Doctor</div>
+      <div className="-mx-4 mt-3 flex gap-3 overflow-x-auto px-4 pb-1 lg:mx-0 lg:grid lg:grid-cols-5 lg:gap-2 lg:overflow-visible lg:px-0">
+        <button onClick={() => onPick(null)} title="All doctors" className="flex w-14 shrink-0 flex-col items-center gap-1.5 lg:w-auto">
+          <span className={cn("flex size-11 items-center justify-center rounded-full text-[11px] font-light ring-1 transition-all", !doctor ? "bg-ink text-white ring-ink" : "bg-white/70 text-ink/70 ring-ink/10 hover:bg-white")}>All</span>
+          <span className="dot text-[11px] text-ink/50">{all.length}</span>
+        </button>
+        {list.map((d) => (
+          <button key={d.id} onClick={() => onPick(d.id)} title={`${d.name} · ${d.specialty}`} className="flex w-14 shrink-0 flex-col items-center gap-1.5 lg:w-auto">
+            <span className={cn("flex size-11 items-center justify-center rounded-full bg-gradient-to-br from-white to-seal-mint/60 text-[12px] font-light text-ink ring-1 transition-all", doctor === d.id ? "ring-2 ring-seal-deep shadow-[0_0_16px_-2px_rgba(47,158,98,0.5)]" : "ring-ink/10 hover:ring-ink/25")}>{initials(d.name)}</span>
+            <span className="dot text-[11px] text-ink/50">{d.n}</span>
+          </button>
+        ))}
+      </div>
+      {chosen && (
+        <div className="card mt-4 !rounded-2xl px-4 py-3">
+          <div className="text-[15px] font-normal">{chosen.name}</div>
+          <div className="text-[12px] font-light text-ink/55">
+            <span className="capitalize">{chosen.specialty}</span> · {chosen.n} patient{chosen.n === 1 ? "" : "s"} today
+          </div>
+        </div>
+      )}
     </div>
   );
 }

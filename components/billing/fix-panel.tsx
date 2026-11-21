@@ -45,7 +45,7 @@ export function FixPanel({ claimId, run, onApplied }: { claimId: string; run?: n
 
   if (!fixes || fixes.length === 0) return null;
   return (
-    <section className="relative overflow-hidden rounded-[32px] bg-[#07130d] p-5 md:p-8 text-white ring-1 ring-seal-green/25">
+    <section className="card relative overflow-hidden !rounded-[32px] p-5 md:p-8 text-ink">
       <div className="pointer-events-none absolute -right-20 -top-24 size-80 rounded-full bg-seal-green/20 blur-3xl" />
       <div className="relative flex items-center gap-3">
         <span className="flex size-11 items-center justify-center rounded-2xl bg-seal-green text-[#06120b]">
@@ -53,21 +53,21 @@ export function FixPanel({ claimId, run, onApplied }: { claimId: string; run?: n
         </span>
         <div>
           <h2 className="display text-[30px] leading-tight">Fix it here</h2>
-          <p className="text-[15px] text-white/55">SEAL&apos;s recommended corrections. One click each, then the claim is checked again.</p>
+          <p className="text-[15px] text-ink/55">SEAL&apos;s recommended corrections. One click each, then the claim is checked again.</p>
         </div>
       </div>
-      {err && <p className="relative mt-4 rounded-2xl bg-[#ff453a]/20 px-4 py-2.5 text-[14px]">{err}</p>}
+      {err && <p className="relative mt-4 rounded-2xl bg-[#c2473c]/10 px-4 py-2.5 text-[14px]">{err}</p>}
       <div className="relative mt-6 space-y-3">
         <AnimatePresence initial={false}>
           {fixes.map((f, i) => {
             const isDone = done.includes(f.findingId);
             return (
-              <motion.div key={f.findingId} layout initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0, transition: { delay: i * 0.06 } }} className="rounded-3xl bg-white/[0.06] p-5 ring-1 ring-white/10">
+              <motion.div key={f.findingId} layout initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0, transition: { delay: i * 0.06 } }} className="rounded-3xl bg-white/60 p-5 ring-1 ring-ink/10">
                 <div className="flex items-start gap-4">
-                  <span className="mt-1 flex size-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-[13px] font-semibold">{isDone ? <Check className="size-4 text-seal-green" /> : i + 1}</span>
+                  <span className="mt-1 flex size-7 shrink-0 items-center justify-center rounded-full bg-white/70 text-[13px] font-semibold">{isDone ? <Check className="size-4 text-seal-deep" /> : i + 1}</span>
                   <div className="min-w-0 flex-1">
                     <div className="text-[18px] font-semibold leading-snug">{f.problem}</div>
-                    <div className="mt-1 text-[15px] text-seal-green/90">→ {f.recommendation}</div>
+                    <div className="mt-1 text-[15px] text-seal-deep/90">→ {f.recommendation}</div>
                     {!isDone && (
                       <div className="mt-4 flex flex-wrap items-center gap-2">
                         {(f.action.type === "request_prior_auth" || f.action.type === "set_quantity" || f.action.type === "remove_line") && (
@@ -90,18 +90,18 @@ export function FixPanel({ claimId, run, onApplied }: { claimId: string; run?: n
                         )}
                         {f.action.type === "ask_doctor" &&
                           (f.action.questionSetId && !f.action.answered ? (
-                            <Link href={`/doctor?q=${f.action.questionSetId}`} className="inline-flex items-center gap-2 rounded-full bg-white/10 px-5 py-2.5 text-[15px] font-semibold">
+                            <Link href={`/doctor?q=${f.action.questionSetId}`} className="inline-flex items-center gap-2 rounded-full bg-white/70 px-5 py-2.5 text-[15px] font-semibold">
                               Waiting for the doctor · open the questions <ArrowRight className="size-4" />
                             </Link>
                           ) : (
-                            <span className="rounded-full bg-white/10 px-4 py-2 text-[14px] text-white/70">{f.action.answered ? "Answered by the doctor" : "Questions are being prepared"}</span>
+                            <span className="rounded-full bg-white/70 px-4 py-2 text-[14px] text-ink/70">{f.action.answered ? "Answered by the doctor" : "Questions are being prepared"}</span>
                           ))}
                         {f.action.type === "ask_doctor" && f.activityId && (
-                          <button onClick={() => apply(f, { type: "remove_line", activityId: f.activityId! })} disabled={!!busy} className="rounded-full px-4 py-2.5 text-[14px] font-semibold text-white/60 ring-1 ring-white/15 hover:text-white">
+                          <button onClick={() => apply(f, { type: "remove_line", activityId: f.activityId! })} disabled={!!busy} className="rounded-full px-4 py-2.5 text-[14px] font-semibold text-ink/60 ring-1 ring-ink/15 hover:text-ink">
                             Remove line instead
                           </button>
                         )}
-                        {f.action.type === "review" && <span className="rounded-full bg-white/10 px-4 py-2 text-[14px] text-white/70">Use “Release with a reason” on the right</span>}
+                        {f.action.type === "review" && <span className="rounded-full bg-white/70 px-4 py-2 text-[14px] text-ink/70">Use “Release with a reason” on the right</span>}
                       </div>
                     )}
                   </div>

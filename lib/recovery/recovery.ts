@@ -1,4 +1,5 @@
 import "server-only";
+import { sharedDb } from "@/lib/db/mongo";
 import { randomUUID } from "node:crypto";
 import type { Db } from "mongodb";
 import { z } from "zod";
@@ -76,7 +77,7 @@ export async function draftRecovery(d: Db, claimId: string): Promise<RecoveryDra
   const rules = await activeRules(d);
   const lines = claim.versions.at(-1)!.lines.length ? Object.fromEntries(claim.versions.flatMap((v) => v.lines).map((l) => [l.activityId, l])) : {};
   // Past wins: same insurer, same service, same denial code, later recovered.
-  const wins = (await d
+  const wins = (await (await sharedDb())
     .collection(C.outcomes)
     .find({ payerId: claim.payerId, refusedLines: { $elemMatch: { code: { $in: denials.map((x) => x.code) }, denialCode: { $in: denials.map((x) => x.denialCode) }, recovered: true } } }, { projection: { embedding: 0, summary: 0 } })
     .limit(5)

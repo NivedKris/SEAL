@@ -10,6 +10,17 @@ import { cn } from "@/lib/utils";
 
 type Op = { agent: string; calls: number; p50: number | null; fallbackRate: number | null };
 type H = {
+  hospital: {
+    name: string;
+    claims: number;
+    clinicians: number;
+    insurers: number;
+    firstTime: number;
+    medicalNecessityShare: number | null;
+    resubmissionRecovers: number;
+    toughest: { insurer: string; refusedClaimsRate: number } | null;
+    deployment: { where: string; model: string; tuning: string; data: string[]; users: string[]; demoNote: string } | null;
+  } | null;
   learning: { readyCases: number; refusedReady: number; learnedRules: number };
   calls: number;
   operations: Op[];
@@ -44,7 +55,7 @@ export function AiHealth() {
   return (
     <main className="mx-auto max-w-[1200px] px-4 md:px-6 pb-24 pt-12">
       <p className="text-[17px] font-medium text-muted-foreground">Insights</p>
-      <h1 className="display mt-1 text-[34px] md:text-[44px] lg:text-[52px] leading-tight">How SEAL is helping Seabreeze</h1>
+      <h1 className="display mt-1 text-[34px] md:text-[44px] lg:text-[52px] leading-tight">How SEAL is helping {h.hospital?.name ?? "Seabreeze"}</h1>
       <p className="mt-3 max-w-2xl text-[19px] text-muted-foreground">Measured on claims the insurer has already decided, so every number here is checked against what really happened.</p>
 
       {critical.map((a) => (
@@ -52,6 +63,9 @@ export function AiHealth() {
           <AlertTriangle className="size-5 text-risk-high" /> {a.text}
         </div>
       ))}
+
+      {h.hospital && <HospitalLearned h={h.hospital} />}
+      {h.hospital?.deployment && <Deployment name={h.hospital.name} d={h.hospital.deployment} />}
 
       <div className="mt-10">
         <LearningBattery ready={h.learning.readyCases} refused={h.learning.refusedReady} learnedRules={h.learning.learnedRules} onLearned={() => void reload()} />
@@ -99,9 +113,9 @@ function Big({ icon, value, suffix, title, body, tone }: { icon: React.ReactNode
     <div className="rise">
       <SpotlightCard theme="light" spotlightColor={tone === "green" ? "rgba(62,207,127,0.25)" : "rgba(42,120,214,0.2)"} className="card h-full !rounded-[32px] p-5 md:p-9">
         <span className={cn("flex size-12 items-center justify-center rounded-2xl", tone === "green" ? "bg-seal-green/15 text-[#178a4c]" : "bg-[#2a78d6]/10 text-[#2a78d6]")}>{icon}</span>
-        <div className="display mt-6 text-[52px] md:text-[76px] leading-none tabular-nums">
+        <div className="dot mt-6 text-[56px] md:text-[80px] leading-none">
           <CountUp to={value} duration={1.2} trigger="load" />
-          <span className="text-[34px] text-muted-foreground">{suffix}</span>
+          <span className="font-sans text-[30px] font-semibold text-muted-foreground">{suffix}</span>
         </div>
         <div className="mt-3 text-[22px] font-semibold leading-snug">{title}</div>
         <p className="mt-2 text-[16px] text-muted-foreground">{body}</p>
@@ -116,6 +130,109 @@ function Small({ icon, title, line }: { icon: React.ReactNode; title: string; li
       <span className="flex size-10 items-center justify-center rounded-xl bg-black/[0.04]">{icon}</span>
       <div className="mt-5 text-[15px] text-muted-foreground">{title}</div>
       <div className="mt-1 text-[21px] font-semibold leading-snug">{line}</div>
+    </div>
+  );
+}
+
+/** What SEAL learned from this hospital's own claims (hospitals with their own history). */
+function HospitalLearned({ h }: { h: NonNullable<H["hospital"]> }) {
+  const facts = [
+    { k: "Paid in full the first time", v: `${Math.round(h.firstTime * 100)}%` },
+    h.medicalNecessityShare != null ? { k: "Of refused money is medical necessity", v: `${Math.round(h.medicalNecessityShare * 100)}%` } : null,
+    { k: "Won back by resubmitting", v: `${Math.round(h.resubmissionRecovers * 100)}%` },
+    h.toughest ? { k: `Refused by ${h.toughest.insurer}`, v: `${Math.round(h.toughest.refusedClaimsRate * 100)}%` } : null,
+  ].filter(Boolean) as { k: string; v: string }[];
+  return (
+    <section className="card mt-10 p-6 md:p-9">
+      <p className="eyebrow">Tuned for {h.name}</p>
+      <h2 className="display mt-3 text-[30px] leading-tight md:text-[40px]">
+        SEAL learned from <span className="dot text-seal-deep">{h.claims.toLocaleString("en")}</span> of {h.name}&apos;s own claims.
+      </h2>
+      <p className="mt-3 max-w-2xl text-[16px] font-light text-ink/65">
+        {h.clinicians} clinicians and {h.insurers} insurers. On top of the public rules and the regional claim memory every hospital shares, SEAL now knows how each insurer treats this hospital, and adjusts every claim&apos;s risk to match.
+      </p>
+      <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {facts.map((f) => (
+          <div key={f.k} className="rounded-2xl bg-white/55 p-5 ring-1 ring-ink/[0.06]">
+            <div className="dot text-[36px] leading-none">{f.v}</div>
+            <div className="mt-3 text-[13px] font-light text-ink/60">{f.k}</div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/** How SEAL is deployed at this hospital: where it sits, which AI, what it learned from, who uses it. */
+function Deployment({ name, d }: { name: string; d: NonNullable<NonNullable<H["hospital"]>["deployment"]> }) {
+  return (
+    <section className="card mt-8 overflow-hidden p-6 md:p-9">
+      <p className="eyebrow">Deployment</p>
+      <h2 className="display mt-3 text-[28px] leading-tight md:text-[36px]">How SEAL is deployed at {name}</h2>
+
+      {/* where it sits */}
+      <div className="mt-8 grid grid-cols-1 items-center gap-3 md:grid-cols-[1fr_auto_1.3fr_auto_1fr]">
+        <Node title={`${name} HMS`} sub="Patient visits, doctors' notes, orders" />
+        <Flow />
+        <div className="relative rounded-[24px] bg-gradient-to-br from-white to-seal-mint/60 p-5 text-center ring-2 ring-seal-deep/30">
+          <div className="text-[18px] font-semibold tracking-tight">SEAL</div>
+          <div className="mt-1 text-[12px] font-light text-ink/65">On-premises · checks every order and claim</div>
+          <div className="mt-3 flex flex-wrap justify-center gap-1.5">
+            {d.users.map((u) => (
+              <span key={u} className="rounded-full bg-white/80 px-2.5 py-1 text-[11px] font-light ring-1 ring-ink/[0.08]">
+                {u}
+              </span>
+            ))}
+          </div>
+        </div>
+        <Flow />
+        <Node title="DHPO · insurers" sub="Claims out, payments and refusals back" />
+      </div>
+      <p className="mt-4 text-center text-[13px] font-light text-ink/60">{d.where}</p>
+
+      <div className="mt-9 grid grid-cols-1 gap-4 md:grid-cols-3">
+        <Fact k="The AI" v={d.model} />
+        <Fact k="How it learns" v={d.tuning} />
+        <div className="rounded-2xl bg-white/55 p-5 ring-1 ring-ink/[0.06]">
+          <div className="eyebrow !text-[10px]">Trained on</div>
+          <ul className="mt-2 space-y-1.5 text-[14px] font-light leading-snug text-ink/80">
+            {d.data.map((x) => (
+              <li key={x} className="flex gap-2">
+                <span className="mt-2 size-1 shrink-0 rounded-full bg-seal-deep" />
+                {x}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+      <p className="mt-6 text-[12px] font-light text-ink/45">{d.demoNote}</p>
+    </section>
+  );
+}
+function Node({ title, sub }: { title: string; sub: string }) {
+  return (
+    <div className="rounded-[22px] bg-white/60 p-5 text-center ring-1 ring-ink/[0.07]">
+      <div className="text-[15px] font-normal">{title}</div>
+      <div className="mt-1 text-[12px] font-light text-ink/55">{sub}</div>
+    </div>
+  );
+}
+function Flow() {
+  return (
+    <div className="flex justify-center md:block" aria-hidden>
+      <svg width="64" height="18" viewBox="0 0 64 18" className="rotate-90 md:rotate-0">
+        <line x1="2" y1="9" x2="62" y2="9" stroke="rgba(31,43,41,0.25)" strokeWidth="1.5" />
+        <line x1="2" y1="9" x2="62" y2="9" stroke="#2f9e62" strokeWidth="2" className="thread-flow" />
+        <path d="M54 3 L62 9 L54 15" fill="none" stroke="rgba(31,43,41,0.35)" strokeWidth="1.5" />
+      </svg>
+    </div>
+  );
+}
+function Fact({ k, v }: { k: string; v: string }) {
+  return (
+    <div className="rounded-2xl bg-white/55 p-5 ring-1 ring-ink/[0.06]">
+      <div className="eyebrow !text-[10px]">{k}</div>
+      <p className="mt-2 text-[14px] font-light leading-snug text-ink/80">{v}</p>
     </div>
   );
 }

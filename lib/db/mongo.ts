@@ -1,6 +1,7 @@
 import "server-only";
 import { MongoClient, type Db } from "mongodb";
 import { env } from "@/lib/env";
+import { currentTenant } from "@/lib/tenant-server";
 
 /**
  * One MongoClient per function instance, reused across invocations (Vercel-safe).
@@ -27,6 +28,21 @@ export function mongoClient(): Promise<MongoClient> {
   return g._sealMongo;
 }
 
+/** The current hospital's database (Basic unless the request is signed in to another hospital). */
 export async function db(): Promise<Db> {
+  const t = await currentTenant();
+  return (await mongoClient()).db(t.db ?? env.MONGODB_DB);
+}
+
+/**
+ * SEAL's shared knowledge (the regional memory of past claims every hospital starts from). It is
+ * stored once, in the Basic database; hospitals read it from there and keep only their own data.
+ */
+export async function sharedDb(): Promise<Db> {
   return (await mongoClient()).db(env.MONGODB_DB);
+}
+
+/** A named hospital's database, for scripts and cross-hospital work. */
+export async function tenantDb(name: string | null): Promise<Db> {
+  return (await mongoClient()).db(name ?? env.MONGODB_DB);
 }

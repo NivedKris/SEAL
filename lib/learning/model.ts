@@ -1,4 +1,5 @@
 import "server-only";
+import { sharedDb } from "@/lib/db/mongo";
 import type { Db } from "mongodb";
 import { COLLECTIONS as C } from "@/lib/db/schemas";
 import type { Rule } from "@/lib/rules/dsl";
@@ -15,7 +16,10 @@ const SMOOTH = 20;
 const RULE_DEFINITE = 0.7;
 const RULE_POSSIBLE = 0.25;
 
-export async function trainStats(d: Db): Promise<Stats> {
+export async function trainStats(hospitalDb: Db): Promise<Stats> {
+  // Learned from the shared regional memory (a hospital's own claims carry no service codes).
+  void hospitalDb;
+  const d = await sharedDb();
   const [billed, refused] = await Promise.all([
     d.collection(C.outcomes).aggregate([{ $unwind: "$codes" }, { $group: { _id: { p: "$payerId", c: "$codes" }, n: { $sum: 1 } } }]).toArray(),
     d.collection(C.outcomes).aggregate([{ $unwind: "$refusedLines" }, { $group: { _id: { p: "$payerId", c: "$refusedLines.code" }, n: { $sum: 1 } } }]).toArray(),

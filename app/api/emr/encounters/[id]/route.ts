@@ -22,7 +22,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       encounter: b.encounter,
       patient: { name: b.patient.name, sex: b.patient.sex, age: ageAt(b.patient.dob, new Date(b.encounter.start).getTime()), maskedId: b.patient.maskedId, nationality: b.patient.nationality },
       insurance: { payer: b.payer.name, plan: b.plan.name, memberNo: b.member.memberNo, validTo: b.member.validTo, copayPct: b.plan.copayPct },
-      provider: { name: b.provider.name, specialty: b.provider.specialty },
+      provider: { name: b.provider.name, specialty: (b.provider as { displaySpecialty?: string }).displaySpecialty ?? b.provider.specialty },
       orders: allOrders,
       diagnoses: b.diagnoses,
       priorAuths: b.priorAuths.filter((p) => p.status === "approved").map((p) => ({ authNo: p.authNo, codes: p.codes, approvedQty: p.approvedQty, validTo: p.validTo })),

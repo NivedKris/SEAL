@@ -1,4 +1,5 @@
 import "server-only";
+import { sharedDb } from "@/lib/db/mongo";
 import type { Db } from "mongodb";
 import { COLLECTIONS as C, type ClaimDoc, type OutcomeDoc, type ProviderDoc } from "@/lib/db/schemas";
 import type { DocConcept } from "@/lib/rules/dsl";
@@ -76,7 +77,7 @@ export async function loadCheckInput(claim: ClaimDoc, d: Db): Promise<ClaimCheck
   return { claim, bundle, diagnoses, lines, note, history, ctxFor };
 }
 
-export type SimilarClaim = { claimId: string; score: number; payerId: string; codes: string[]; diagnoses: string[]; firstPassRefused: boolean; refused: string[]; fixes: string[] };
+export type SimilarClaim = { claimId: string; score: number; payerId: string; codes: string[]; diagnoses: string[]; firstPassRefused: boolean; refused: string[]; fixes: string[]; hospital?: string; clinician?: string; value?: number };
 
 /** Text for the embedding, in the same shape as the seeded outcome summaries (without the outcome). */
 export function querySummary(input: ClaimCheckInput): string {
@@ -90,16 +91,38 @@ export function querySummary(input: ClaimCheckInput): string {
 
 /** search_ledger: the most similar past claims for this insurer, with their outcomes (Atlas Vector Search). */
 export async function similarClaims(input: ClaimCheckInput, d: Db, limit = 10): Promise<SimilarClaim[]> {
-  const [v] = await embedTexts([querySummary(input)]);
-  const hits = (await d
-    .collection(C.outcomes)
-    .aggregate([
-      { $vectorSearch: { index: VECTOR_INDEX_NAME, path: "embedding", queryVector: toVector(v), numCandidates: 150, limit: limit + 1, filter: { payerId: input.claim.payerId } } },
-      { $project: { embedding: 0, summary: 0, score: { $meta: "vectorSearchScore" } } },
-    ])
-    .toArray()) as unknown as (OutcomeDoc & { score: number })[];
-  return hits
-    .filter((h) => h.claimId !== input.claim._id)
+  // A hospital with its own history: also match its own past claims by the same clinician.
+  const own = await d.collection(C.outcomes).findOne({ _id: { $regex: "^hx-" } as never }, { projection: { hospital: 1 } });
+  const query = querySummary(input) + (own ? ` Clinician: ${input.bundle.provider.name}.` : "");
+  const [v] = await embedTexts([query]);
+  type Hit = OutcomeDoc & { score: number; hospital?: string; clinician?: string };
+  const search = async (db: Db, n: number) =>
+    (await db
+      .collection(C.outcomes)
+      .aggregate([
+        { $vectorSearch: { index: VECTOR_INDEX_NAME, path: "embedding", queryVector: toVector(v), numCandidates: Math.max(150, n * 10), limit: n, filter: { payerId: input.claim.payerId } } },
+        { $project: { embedding: 0, summary: 0, score: { $meta: "vectorSearchScore" } } },
+      ])
+      .toArray()) as unknown as Hit[];
+  // The regional memory lives once, in the shared database; a hospital's own claims live in its own.
+  const shared = await sharedDb();
+  const [regional, ownHits] = await Promise.all([search(shared, limit + 1), own && d.databaseName !== shared.databaseName ? search(d, 40) : Promise.resolve([] as Hit[])]);
+  // Another hospital sees only the regional history in the shared memory, never Basic's own live claims.
+  const sharedHits = d.databaseName === shared.databaseName ? regional : regional.filter((h) => !/^clm-L/.test(h.claimId));
+  const hits = [...sharedHits, ...ownHits];
+  const others = hits.filter((h) => h.claimId !== input.claim._id);
+  // Up to 6 regional matches (they carry services and diagnoses) and 4 of the hospital's own claims,
+  // preferring the same clinician.
+  const picked = own
+    ? [
+        ...others.filter((h) => !h.hospital).slice(0, limit - 4),
+        ...others
+          .filter((h) => h.hospital)
+          .sort((a, b) => Number(b.clinician === input.bundle.provider.name) - Number(a.clinician === input.bundle.provider.name) || b.score - a.score)
+          .slice(0, 4),
+      ].sort((a, b) => b.score - a.score)
+    : others.slice(0, limit);
+  return picked
     .slice(0, limit)
     .map((h) => ({
       claimId: h.claimId,
@@ -108,7 +131,8 @@ export async function similarClaims(input: ClaimCheckInput, d: Db, limit = 10): 
       codes: h.codes,
       diagnoses: h.diagnoses,
       firstPassRefused: h.firstPassRefused,
-      refused: h.refusedLines.map((l) => `${l.denialCode} on ${l.code}${l.recovered ? " (recovered on resubmission)" : ""}`),
+      refused: h.refusedLines.map((l) => `${l.denialCode}${l.code ? ` on ${l.code}` : ""}${l.recovered ? " (recovered on resubmission)" : ""}`),
       fixes: h.fixesApplied,
+      ...(h.hospital ? { hospital: h.hospital, clinician: h.clinician, value: h.gross } : {}),
     }));
 }

@@ -13,8 +13,9 @@ export async function POST() {
     const received = await pollRemittances();
     // Denial reader on newly refused lines, after the response.
     const refused = received.filter((r) => r.refused > 0);
+    // Bind this hospital's database now: background work must not depend on the request after it ends.
+    const d = await db();
     if (refused.length) after(async () => {
-      const d = await db();
       for (const r of refused) await readDenials(d, r.claimId).catch(() => null);
     });
     return { received };

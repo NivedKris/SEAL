@@ -44,3 +44,7 @@ Thumbs.db
 
 # ── Tests ──
 /coverage
+
+# Real claims data (patient identifiers): never commit
+NEW APPOLLO.xlsx
+*.claims.xlsx

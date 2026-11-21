@@ -23,10 +23,12 @@ const time = (iso?: string) => (iso ? new Date(iso).toLocaleString("en-GB", { da
 export function DoctorApp() {
   const [lang, setLang] = useState<"en" | "ar">("en");
   const t = T[lang];
-  const [providerId, setProviderId] = useState("");
+  const params = useSearchParams();
+  // Opened from a doctor's card on Today: start on that doctor's questions.
+  const [providerId, setProviderId] = useState(params.get("providerId") ?? "");
   const [providers, setProviders] = useState<{ _id: string; name: string }[]>([]);
   const [sets, setSets] = useState<SetRow[] | null>(null);
-  const [open, setOpen] = useState<string | null>(useSearchParams().get("q"));
+  const [open, setOpen] = useState<string | null>(params.get("q"));
   const cursor = useRef(0);
 
   const load = useCallback(async () => {

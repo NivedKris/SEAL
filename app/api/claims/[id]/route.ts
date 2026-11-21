@@ -25,6 +25,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       d.collection(C.questionSets).find({ claimId: id, status: { $ne: "cancelled" } }).sort({ writtenAt: -1 }).toArray(),
     ]);
     const labelled = { ...claim, versions: claim.versions.map((v) => ({ ...v, lines: v.lines.map((l) => ({ ...l, label: cptLabel(l.code) })) })) };
-    return { claim: labelled, patient, payer, provider, encounter, diagnoses, findings, remittances, denials, events, questionSets };
+    const shownProvider = provider ? { ...provider, specialty: provider.displaySpecialty ?? provider.specialty } : provider;
+    return { claim: labelled, patient, payer, provider: shownProvider, encounter, diagnoses, findings, remittances, denials, events, questionSets };
   });
 }

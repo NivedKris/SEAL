@@ -1,3 +1,4 @@
+import { db } from "@/lib/db/mongo";
 import { after } from "next/server";
 import { handle, actorFrom } from "@/lib/api/respond";
 import { signEncounter } from "@/lib/claims/builder";
@@ -12,7 +13,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   void warmEmbeddings();
   return handle(async () => {
     const claim = await signEncounter(id, actorFrom(req, "doctor"));
-    after(() => runClaimCheck(claim._id).catch(() => null));
+    const d = await db();
+    after(() => runClaimCheck(claim._id, { database: d }).catch(() => null));
     return { claim };
   });
 }

@@ -5,6 +5,7 @@ import { invalidateRuleCache } from "@/lib/rules/active";
 import { runEvaluation } from "@/lib/learning/evaluate";
 import seed from "./scenario-seed.json";
 import { seedWorkday, WORKDAY_PREFIX } from "./workday";
+import { seedClinics } from "./clinics";
 
 /**
  * Reset to the seeded state (plan §9.8 /admin): remove everything the live demo wrote and restore
@@ -51,7 +52,9 @@ export async function resetDemo(d: Db, opts: { clearAiCalls?: boolean; workday?:
   invalidateRuleCache();
   const baseline = await runEvaluation(d);
   const workday = opts.workday === false ? null : await seedWorkday(d).catch((e) => ({ error: (e as Error).message }));
-  return { workday, removed: r, restored: { encounters: seed.encounters.length, orders: seed.orders.length, claims: seed.claims.length }, baselineEval: baseline._id };
+  // Every doctor's clinic for today (open visits, from each doctor's own history).
+  const clinics = opts.workday === false ? null : await seedClinics(d).catch((e) => ({ error: (e as Error).message }));
+  return { workday, clinics, removed: r, restored: { encounters: seed.encounters.length, orders: seed.orders.length, claims: seed.claims.length }, baselineEval: baseline._id };
 }
 
 export const SEED_META = { meta: seed.meta, assumptions: seed.assumptions, counts: seed.counts };
