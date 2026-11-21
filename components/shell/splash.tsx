@@ -13,7 +13,6 @@ import GradientText from "@/components/GradientText";
 const MESSAGES: { text: string; dir?: "rtl"; big?: boolean }[] = [
   { text: "hello", big: true },
   { text: "مرحبا", dir: "rtl", big: true },
-  { text: "Welcome to Seabreeze." },
   { text: "Every order, checked." },
   { text: "Every claim, paid." },
 ];
