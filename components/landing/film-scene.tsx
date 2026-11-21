@@ -509,13 +509,24 @@ function Rig() {
     const k = keyAt(film.p);
     POS.getPoint(k.t, pos);
     LOOK.getPoint(k.t, look);
-    if (size.width < size.height) {
-      // phones: centre the objects, step back, and lift them into the top half (words sit below)
+    // Phones see a narrow slice of the scene: widen the lens so the whole row of glass fits across
+    // the screen, centre each object, and keep it clear of the words.
+    const aspect = size.width / size.height;
+    const portrait = aspect < 1;
+    const fov = portrait ? Math.min(62, 34 + (1 - aspect) * 46) : 34;
+    const cam = camera as THREE.PerspectiveCamera;
+    if (Math.abs(cam.fov - fov) > 0.1) {
+      cam.fov = fov;
+      cam.updateProjectionMatrix();
+    }
+    if (portrait) {
       const dx = SHIFT_M.getPoint(k.t).x;
       pos.x += dx;
       look.x += dx;
-      pos.sub(look).multiplyScalar(1.95).add(look);
-      look.y -= 2.4;
+      pos.sub(look).multiplyScalar(1.45).add(look);
+      // story chapters: objects in the top half (words below); closing chapters: below the words
+      const closing = span(film.p, AT.numbers - S * 0.4, AT.numbers);
+      look.y += -4.3 * (1 - closing) + 1.8 * closing;
     }
     lean.current.x += (pointer.x - lean.current.x) * 0.03;
     lean.current.y += (pointer.y - lean.current.y) * 0.03;

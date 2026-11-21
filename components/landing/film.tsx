@@ -9,7 +9,7 @@ import { ArrowRight } from "lucide-react";
 import { SealLogo } from "@/components/brand/seal-logo";
 import { HospitalLoop } from "@/components/marketing/hospital-loop";
 import { CHAPTERS, film } from "./film-state";
-import { autoStart } from "./sound";
+import { autoStart, beginWithSound } from "./sound";
 import { SoundToggle } from "./sound-toggle";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +27,8 @@ export function Film() {
   const lenisRef = useRef<Lenis | null>(null);
   const [lite, setLite] = useState(false);
   const [ready, setReady] = useState(false);
+  // The opening screen: one tap starts the music and the film (browsers allow sound only after a tap).
+  const [begun, setBegun] = useState(false);
   const [chapter, setChapter] = useState(0);
   const [progress, setProgress] = useState(0);
 
@@ -69,6 +71,36 @@ export function Film() {
     if (lenisRef.current) lenisRef.current.scrollTo(el.offsetTop + 2, { duration: 2.4 });
     else window.scrollTo({ top: el.offsetTop + 2, behavior: "smooth" });
   }, []);
+
+  // Hold the page still until the visitor begins.
+  useEffect(() => {
+    const l = lenisRef.current;
+    if (!begun) {
+      l?.stop();
+      document.documentElement.style.overflow = "hidden";
+    } else {
+      l?.start();
+      document.documentElement.style.overflow = "";
+    }
+    return () => {
+      document.documentElement.style.overflow = "";
+    };
+  }, [begun, ready]);
+  const begin = useCallback(() => {
+    beginWithSound();
+    setBegun(true);
+  }, []);
+  useEffect(() => {
+    if (begun) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        begin();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [begun, begin]);
 
   const reg = (i: number) => (el: HTMLElement | null) => void (sections.current[i] = el);
   const inStory = chapter < STORY.length;
@@ -168,6 +200,7 @@ export function Film() {
         </section>
       </div>
 
+      <AnimatePresence>{!begun && <BeginGate onBegin={begin} />}</AnimatePresence>
       <SoundToggle className="fixed bottom-[88px] right-5 z-30 md:bottom-[92px] md:right-8" />
       <AnimatePresence>{inStory && ready && <Timeline chapter={chapter} progress={progress} onPick={goTo} />}</AnimatePresence>
     </main>
@@ -310,6 +343,56 @@ function Timeline({ chapter, progress, onPick }: { chapter: number; progress: nu
           ))}
         </div>
       </div>
+    </motion.div>
+  );
+}
+
+/**
+ * The opening screen: S, E, A and L arrive one by one, the green full stop drops in, then
+ * "press anywhere to continue". That press starts the music (browsers allow sound only after one).
+ */
+const LETTERS = ["S", "E", "A", "L"];
+function BeginGate({ onBegin }: { onBegin: () => void }) {
+  const [touch, setTouch] = useState(false);
+  useEffect(() => setTouch(window.matchMedia("(pointer: coarse)").matches), []);
+  const step = 0.32;
+  const dotAt = 0.5 + LETTERS.length * step + 0.15;
+  return (
+    <motion.div
+      initial={{ opacity: 1 }}
+      exit={{ opacity: 0, filter: "blur(12px)", scale: 1.04 }}
+      transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+      className="fixed inset-0 z-[80] flex cursor-pointer flex-col items-center justify-center bg-[#e6ede9]/75 px-6 backdrop-blur-2xl"
+      onClick={onBegin}
+      role="button"
+      aria-label="Press anywhere to continue"
+    >
+      <div className="flex items-end font-serif text-[84px] font-extrabold leading-none tracking-[-0.02em] text-ink sm:text-[120px]" aria-hidden>
+        {LETTERS.map((l, i) => (
+          <motion.span
+            key={l}
+            initial={{ opacity: 0, y: 26, filter: "blur(14px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            transition={{ delay: 0.5 + i * step, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+          >
+            {l}
+          </motion.span>
+        ))}
+        <motion.span
+          initial={{ opacity: 0, y: -90, scale: 0.4 }}
+          animate={{ opacity: 1, y: 0, scale: [0.4, 1.25, 0.92, 1] }}
+          transition={{ delay: dotAt, duration: 0.9, ease: [0.34, 1.56, 0.64, 1], scale: { delay: dotAt, duration: 0.9, times: [0, 0.55, 0.8, 1] } }}
+          className="mb-[0.12em] ml-[0.04em] inline-block size-[0.17em] rounded-full bg-seal-green shadow-[0_0_24px_rgba(62,207,127,0.65)]"
+        />
+      </div>
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: [0, 1, 0.45, 1] }}
+        transition={{ delay: dotAt + 0.9, duration: 2.4, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" }}
+        className="mt-12 text-[12px] font-light tracking-[0.38em] text-ink/60"
+      >
+        {touch ? "TAP ANYWHERE TO CONTINUE" : "PRESS ANYWHERE TO CONTINUE"}
+      </motion.p>
     </motion.div>
   );
 }

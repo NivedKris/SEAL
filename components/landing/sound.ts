@@ -88,6 +88,24 @@ async function play(): Promise<boolean> {
   }
 }
 
+/**
+ * Start the music from a tap or key press. Must be called inside the event handler itself:
+ * browsers only allow sound that starts within the visitor's own gesture.
+ * Does nothing if the visitor muted it before.
+ */
+export function beginWithSound() {
+  if (mutedByVisitor()) return false;
+  const a = element();
+  void a
+    .play()
+    .then(() => {
+      set({ on: true, available: true });
+      ramp(VOLUME, 2200);
+    })
+    .catch(() => {});
+  return true;
+}
+
 let armed = false;
 /**
  * Start the soundtrack as soon as possible: right away if the browser allows it, otherwise on the
