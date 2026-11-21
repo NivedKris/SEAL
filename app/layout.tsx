@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Source_Serif_4, Geist_Mono, Noto_Sans_Arabic, Doto } from "next/font/google";
 import { TopBar } from "@/components/shell/top-bar";
 import { Splash } from "@/components/shell/splash";
+import { Assistant } from "@/components/assistant/assistant";
 import { currentTenant } from "@/lib/tenant-server";
 import "./globals.css";
 
@@ -24,6 +25,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <Splash />
         <TopBar tenant={tenant.id} />
         {children}
+        <Assistant />
       </body>
     </html>
   );

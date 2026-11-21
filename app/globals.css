@@ -318,3 +318,14 @@ html[lang="ar"] body,
 @keyframes thread-flow { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -200; } }
 .thread-flow { stroke-dasharray: 18 182; animation: thread-flow 4.5s linear infinite; filter: drop-shadow(0 0 4px rgba(255,255,255,0.9)); }
 @media (prefers-reduced-motion: reduce) { .thread-flow { animation: none; } }
+/* Assistant orb */
+@keyframes orb-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+.orb-breathe { animation: orb-breathe 4.2s ease-in-out infinite; }
+@keyframes orb-spin { to { transform: rotate(360deg); } }
+.orb-spin { animation: orb-spin 1.4s linear infinite; -webkit-mask: radial-gradient(circle, transparent 62%, #000 64%); mask: radial-gradient(circle, transparent 62%, #000 64%); }
+@keyframes orb-ripple { from { transform: scale(1); opacity: 0.8; } to { transform: scale(1.9); opacity: 0; } }
+.orb-ripple { animation: orb-ripple 1.6s ease-out infinite; }
+/* a note field SEAL just wrote into */
+@keyframes field-glow { 0% { box-shadow: 0 0 0 0 rgba(127,230,176,0); } 30% { box-shadow: 0 0 0 6px rgba(127,230,176,0.45), 0 18px 50px -16px rgba(47,158,98,0.45); } 100% { box-shadow: 0 0 0 2px rgba(127,230,176,0.35), 0 18px 50px -20px rgba(47,158,98,0.25); } }
+.field-glow { animation: field-glow 1.6s ease-out both; }
+@media (prefers-reduced-motion: reduce) { .orb-breathe, .orb-spin, .orb-ripple { animation: none; } }

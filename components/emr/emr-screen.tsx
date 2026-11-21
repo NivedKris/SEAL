@@ -10,6 +10,7 @@ import { SealLogo } from "@/components/brand/seal-logo";
 import ShinyText from "@/components/ShinyText";
 import { CodePicker } from "@/components/shared/code-picker";
 import { cn } from "@/lib/utils";
+import { PAGE_EVENT, setAssistantPage, type PageEvent } from "@/components/assistant/store";
 
 // ── Types from the EMR API and SEAL's check API ───────────────────────────────
 type Order = { _id: string; code: string; label: string; kind: string; quantity: number; justificationStatus: string };
@@ -155,6 +156,39 @@ export function EmrScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  // The assistant: tell it which visit is open, and let it write into the note (it streams in, glowing).
+  const [glow, setGlow] = useState<keyof typeof note | null>(null);
+  const noteRef = useRef(note);
+  noteRef.current = note;
+  useEffect(() => {
+    if (data && id) setAssistantPage({ encounterId: id, kind: "visit", label: `${data.patient.name} · visit with ${data.provider.name}` });
+  }, [data, id]);
+  useEffect(() => {
+    const onEvent = (ev: Event) => {
+      const e = (ev as CustomEvent<PageEvent>).detail;
+      if (e.kind === "refresh") return void load().then(() => recheck(noteRef.current, { immediate: true }));
+      if (e.kind !== "note") return;
+      const field = e.field;
+      const base = e.mode === "replace" ? "" : noteRef.current[field].trim();
+      const target = base ? `${base}${/[.!?]$/.test(base) ? " " : ". "}${e.text.trim()}` : e.text.trim();
+      setGlow(field);
+      let i = base.length;
+      const step = () => {
+        i = Math.min(target.length, i + 3);
+        const n = { ...noteRef.current, [field]: target.slice(0, i) };
+        setNote(n);
+        if (i < target.length) requestAnimationFrame(step);
+        else {
+          recheck(n, { immediate: true });
+          setTimeout(() => setGlow((g) => (g === field ? null : g)), 2200);
+        }
+      };
+      requestAnimationFrame(step);
+    };
+    window.addEventListener(PAGE_EVENT, onEvent);
+    return () => window.removeEventListener(PAGE_EVENT, onEvent);
+  }, [load, recheck]);
+
   const editNote = (k: keyof typeof note, v: string) => {
     const n = { ...note, [k]: v };
     setNote(n);
@@ -263,9 +297,9 @@ export function EmrScreen() {
               </Link>
             )}
 
-            <NoteCard title="What the patient says" hint="In the patient's own words" value={note.complaint} disabled={!open} rows={3} onChange={(v) => editNote("complaint", v)} />
-            <NoteCard title="What you found" hint="Examination findings" value={note.findings} disabled={!open} rows={4} onChange={(v) => editNote("findings", v)} />
-            <NoteCard title="Plan" value={note.plan} disabled={!open} rows={2} onChange={(v) => editNote("plan", v)} />
+            <NoteCard title="What the patient says" hint="In the patient's own words" value={note.complaint} disabled={!open} rows={3} onChange={(v) => editNote("complaint", v)} glow={glow === "complaint"} />
+            <NoteCard title="What you found" hint="Examination findings" value={note.findings} disabled={!open} rows={4} onChange={(v) => editNote("findings", v)} glow={glow === "findings"} />
+            <NoteCard title="Plan" value={note.plan} disabled={!open} rows={2} onChange={(v) => editNote("plan", v)} glow={glow === "plan"} />
 
             <div className="card p-6">
               <div className="flex items-center justify-between gap-4">
@@ -409,12 +443,12 @@ function Pill({ children, muted }: { children: React.ReactNode; muted?: boolean 
   return <span className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1", muted ? "text-muted-foreground" : "bg-black/[0.04]")}>{children}</span>;
 }
 
-function NoteCard({ title, hint, value, onChange, disabled, rows }: { title: string; hint?: string; value: string; onChange: (v: string) => void; disabled?: boolean; rows: number }) {
+function NoteCard({ title, hint, value, onChange, disabled, rows, glow }: { title: string; hint?: string; value: string; onChange: (v: string) => void; disabled?: boolean; rows: number; glow?: boolean }) {
   return (
-    <div className="card p-6 transition-shadow focus-within:shadow-[0_0_0_4px_rgba(62,207,127,0.15),0_12px_40px_-12px_rgba(0,0,0,0.1)]">
+    <div className={cn("card p-6 transition-shadow focus-within:shadow-[0_0_0_4px_rgba(62,207,127,0.15),0_12px_40px_-12px_rgba(0,0,0,0.1)]", glow && "field-glow")}>
       <div className="flex items-baseline justify-between">
         <h2 className="text-[19px] font-semibold">{title}</h2>
-        {hint && <span className="text-[13px] text-muted-foreground">{hint}</span>}
+        {glow ? <span className="flex items-center gap-1.5 text-[12px] font-light text-[#237a4b]"><span className="size-1.5 rounded-full bg-seal-deep" />SEAL is writing what was said</span> : hint && <span className="text-[13px] text-muted-foreground">{hint}</span>}
       </div>
       <textarea disabled={disabled} value={value} onChange={(e) => onChange(e.target.value)} rows={rows} className="mt-3 w-full resize-none bg-transparent text-[17px] leading-relaxed outline-none placeholder:text-muted-foreground disabled:text-muted-foreground" placeholder="Type here…" />
     </div>

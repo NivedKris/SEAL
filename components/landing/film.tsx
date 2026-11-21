@@ -9,7 +9,7 @@ import { ArrowRight } from "lucide-react";
 import { SealLogo } from "@/components/brand/seal-logo";
 import { HospitalLoop } from "@/components/marketing/hospital-loop";
 import { CHAPTERS, film } from "./film-state";
-import { stopSound } from "./sound";
+import { autoStart } from "./sound";
 import { SoundToggle } from "./sound-toggle";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +33,8 @@ export function Film() {
   useEffect(() => {
     setLite(window.matchMedia("(max-width: 768px)").matches || (navigator.hardwareConcurrency ?? 8) <= 4);
     setReady(true);
+    // The soundtrack starts by itself if the browser allows it, otherwise on the first tap or key.
+    void autoStart();
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const lenis = reduce ? null : new Lenis({ autoRaf: true, lerp: 0.075, wheelMultiplier: 0.85 });
     lenisRef.current = lenis;
@@ -55,7 +57,7 @@ export function Film() {
     window.addEventListener("resize", update);
     return () => {
       lenis?.destroy();
-      stopSound();
+      // the music carries on into the greeting and the hospital picker
       window.removeEventListener("scroll", update);
       window.removeEventListener("resize", update);
     };

@@ -1,6 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
 import { motion } from "motion/react";
+import { autoStart } from "@/components/landing/sound";
+import { SoundToggle } from "@/components/landing/sound-toggle";
 import { ArrowRight, Check } from "lucide-react";
 import { SealLogo } from "@/components/brand/seal-logo";
 import { TENANTS, type Tenant } from "@/lib/tenant";
@@ -9,8 +12,11 @@ import { cn } from "@/lib/utils";
 /** "Open SEAL": choose a hospital. Two large cards; each opens that hospital's SEAL. */
 export function HospitalPicker() {
   const list = [TENANTS.basic, TENANTS.apollo];
+  // Keep the soundtrack going from the landing (or start it, if someone comes here directly).
+  useEffect(() => void autoStart(), []);
   return (
     <main className="relative min-h-[100svh] overflow-hidden px-5 pb-16 pt-28 md:px-10">
+      <SoundToggle className="fixed bottom-6 right-5 z-30 md:right-8" />
       <div className="pointer-events-none absolute -left-40 top-10 size-[620px] rounded-full bg-[#fff6e6]/80 blur-3xl" />
       <div className="pointer-events-none absolute -right-40 bottom-0 size-[620px] rounded-full bg-seal-mint/40 blur-3xl" />
       <div className="relative mx-auto max-w-[1180px]">

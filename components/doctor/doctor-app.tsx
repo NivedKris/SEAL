@@ -3,6 +3,7 @@
 import { SealLoader } from "@/components/brand/seal-loader";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { PAGE_EVENT, setAssistantPage, type PageEvent } from "@/components/assistant/store";
 import { ArrowLeft, Check, ChevronRight, Loader2 } from "lucide-react";
 import { SealLogo } from "@/components/brand/seal-logo";
 import { cn } from "@/lib/utils";
@@ -122,6 +123,27 @@ function QuestionFlow({ id, lang, onClose }: { id: string; lang: "en" | "ar"; on
       });
   }, [id]);
 
+  // The assistant: tell it which questions are open, and show answers it fills in (already saved).
+  const [glowKey, setGlowKey] = useState<string | null>(null);
+  useEffect(() => {
+    if (d) setAssistantPage({ questionSetId: id, kind: "questions", label: `SEAL's questions · ${d.patient?.name ?? "patient"}${d.claim ? ` · claim ${d.claim.claimNo.split("-").at(-1)}` : ""}` });
+    return () => setAssistantPage({});
+  }, [d, id]);
+  useEffect(() => {
+    const onEvent = (ev: Event) => {
+      const e = (ev as CustomEvent<PageEvent>).detail;
+      if (e.kind !== "answer" || e.setId !== id) return;
+      setAnswers((a) => ({ ...a, [e.gapId]: { ...a[e.gapId], [e.key]: e.value } }));
+      const i = d?.set.questions.findIndex((q) => q.gapId === e.gapId) ?? -1;
+      if (i >= 0) setStep(i);
+      setSaving("saved");
+      setGlowKey(`${e.gapId}|${e.key}`);
+      setTimeout(() => setGlowKey((g) => (g === `${e.gapId}|${e.key}` ? null : g)), 2400);
+    };
+    window.addEventListener(PAGE_EVENT, onEvent);
+    return () => window.removeEventListener(PAGE_EVENT, onEvent);
+  }, [d, id]);
+
   if (!d) return <SealLoader size={28} />;
   const qs = d.set.questions;
   const n = qs.length;
@@ -226,8 +248,11 @@ function QuestionFlow({ id, lang, onClose }: { id: string; lang: "en" | "ar"; on
           const v = answers[q.gapId]?.[f.key] ?? "";
           const label = lang === "ar" ? f.labelAr : f.labelEn;
           return (
-            <label key={f.key} className="block">
-              <span className="text-[13px] font-medium">{label}</span>
+            <label key={f.key} className={cn("block rounded-2xl transition-shadow", glowKey === `${q.gapId}|${f.key}` && "field-glow -mx-2 px-2 py-1")}>
+              <span className="flex items-center justify-between text-[13px] font-medium">
+                {label}
+                {glowKey === `${q.gapId}|${f.key}` && <span className="text-[11px] font-light text-[#237a4b]">filled in by SEAL · check it</span>}
+              </span>
               {f.kind === "choice" ? (
                 <div className="mt-2 flex flex-wrap gap-2">
                   {f.options!.map((o) => (

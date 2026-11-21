@@ -12,6 +12,7 @@ import ShinyText from "@/components/ShinyText";
 import { FixPanel } from "./fix-panel";
 import { TraceTerminal } from "./trace-terminal";
 import { CodeChip } from "@/components/shared/code-chip";
+import { setAssistantPage } from "@/components/assistant/store";
 import { cn } from "@/lib/utils";
 
 // ── Shapes coming from /api/claims/[id] and the check stream ─────────────────
@@ -112,6 +113,10 @@ export function ClaimDetail({ id }: { id: string }) {
   useEffect(() => {
     void load();
   }, [load]);
+  // Tell the assistant which claim is open.
+  useEffect(() => {
+    if (detail) setAssistantPage({ claimId: detail.claim._id, kind: "claim", label: `Claim ${detail.claim.claimNo.split("-").at(-1)} · ${detail.patient.name} · ${detail.payer.name}` });
+  }, [detail]);
 
   // Live check stream (SSE). Opens while a check is pending or running, and after "Re-run check".
   const state = detail?.claim.liveCheckState;
