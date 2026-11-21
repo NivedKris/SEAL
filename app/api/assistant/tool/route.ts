@@ -12,6 +12,9 @@ export async function POST(req: Request) {
   return handle(async () => {
     const { name, args, context } = Body.parse(await req.json());
     if (isWriteTool(name)) return { result: { error: "write tools are proposals on screen, not run on the server" } };
-    return { result: await runReadTool(await db(), name, args, context) };
+    const result = await runReadTool(await db(), name, args, context);
+    // Voice replies slow down a lot with very large look-ups: keep each one compact.
+    const json = JSON.stringify(result);
+    return { result: json.length > 6000 ? `${json.slice(0, 6000)}… (trimmed; ask a narrower question for the rest)` : result };
   });
 }

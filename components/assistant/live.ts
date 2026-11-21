@@ -25,6 +25,10 @@ export async function stopLive() {
   await current?.stop();
   current = null;
 }
+/** Stop SEAL mid-answer and listen. */
+export function interruptLive() {
+  current?.interrupt();
+}
 /** Send typed text into the open voice session. */
 export function sendLiveText(text: string) {
   current?.text(text);
@@ -55,6 +59,22 @@ class LiveVoice {
   private playing = new Set<AudioBufferSourceNode>();
   private raf = 0;
   private micLevel = 0;
+  // The room's background level, learnt as we go (for the orb and "Hearing you" only: the audio itself
+  // is always sent untouched; muting or cutting it was tested and made recognition worse).
+  private noiseFloor = 0.006;
+  private calibration: number[] = [];
+  // Speech captured while the line is still opening is kept and sent the moment it opens.
+  private pending: Int16Array[] = [];
+  private endAfterFlush = false;
+  private lastVoice = 0;
+  // Turn-taking (Talk): once the person has finished, the mic pauses until SEAL has answered, so a
+  // repeated question can't reach it (no double answers) and SEAL can't interrupt itself.
+  private uploading = true;
+  private voiceMs = 0;
+  private waitingSince = 0;
+  private modelBusy = false;
+  private turnDone = false;
+  private dropAudio = false;
   private userCaption = "";
   private botCaption = "";
   private stopped = false;
@@ -81,7 +101,14 @@ class LiveVoice {
       }
       if (!this.session) throw lastErr ?? new Error("could not open a voice session");
       if (this.stopped) return void this.session.close();
-      assistant.setLive({ status: "listening" });
+      // anything said while connecting goes first
+      for (const pcm of this.pending) this.session.sendRealtimeInput({ audio: { data: b64.fromInt16(pcm), mimeType: `audio/pcm;rate=${IN_RATE}` } });
+      this.pending = [];
+      if (this.endAfterFlush) {
+        this.endAfterFlush = false;
+        this.session.sendRealtimeInput({ audioStreamEnd: true });
+      }
+      if (this.uploading) assistant.setLive({ status: "listening" });
       this.tick();
     } catch (e) {
       assistant.setLive({ status: "error", error: friendly(e) });
@@ -143,19 +170,43 @@ class LiveVoice {
     const ratio = this.inCtx.sampleRate / IN_RATE;
     node.port.onmessage = (ev: MessageEvent<Float32Array>) => {
       const f = ev.data;
-      // level for the orb
       let sum = 0;
       for (let i = 0; i < f.length; i++) sum += f[i] * f[i];
-      this.micLevel = Math.min(1, Math.sqrt(sum / f.length) * 6);
-      if (!this.session) return;
-      // downsample to 16 kHz, 16-bit
+      const rms = Math.sqrt(sum / f.length);
+      const now = performance.now();
+      // Learn the room first: the opening ~0.6 s set the background level; nothing counts as speech yet.
+      if (this.calibration.length < 15) {
+        this.calibration.push(rms);
+        this.noiseFloor = Math.max(0.002, this.calibration.reduce((a, b) => a + b, 0) / this.calibration.length);
+      }
+      // Then the floor drops quickly to quiet moments and creeps up slowly to a steady hum (an air
+      // conditioner, a fan), while short bursts like words barely move it.
+      else this.noiseFloor = Math.max(0.002, rms < this.noiseFloor ? this.noiseFloor * 0.8 + rms * 0.2 : this.noiseFloor + (rms - this.noiseFloor) * 0.03);
+      const calibrated = this.calibration.length >= 15;
+      // Speech is clearly above the background; while SEAL is talking, demand more (its own voice
+      // leaking into the mic would otherwise interrupt it).
+      const threshold = Math.max(0.012, this.noiseFloor * 2.2) * (this.playing.size ? 2.4 : 1);
+      const frameMs = (f.length / (this.inCtx?.sampleRate ?? 48000)) * 1000;
+      if (calibrated && rms > threshold) {
+        this.lastVoice = now;
+        this.voiceMs += frameMs;
+      } else if (now - this.lastVoice > 1000 && this.voiceMs < 500) this.voiceMs = 0; // a blip (a cough, a door), not speech
+      this.micLevel = this.uploading && now - this.lastVoice < 300 ? Math.min(1, rms * 6) : 0;
+      if (!this.uploading) return;
+      // downsample to 16 kHz, 16-bit, and send as is
       const n = Math.floor(f.length / ratio);
       const out = new Int16Array(n);
       for (let i = 0; i < n; i++) {
         const v = f[Math.floor(i * ratio)];
         out[i] = Math.max(-1, Math.min(1, v)) * 0x7fff;
       }
-      this.session.sendRealtimeInput({ audio: { data: b64.fromInt16(out), mimeType: `audio/pcm;rate=${IN_RATE}` } });
+      if (this.session) this.session.sendRealtimeInput({ audio: { data: b64.fromInt16(out), mimeType: `audio/pcm;rate=${IN_RATE}` } });
+      else {
+        this.pending.push(out);
+        if (this.pending.length > 180) this.pending.shift(); // keep the last ~8 s
+      }
+      // Talk: after real speech and a second of quiet, the question is complete: hand the turn over.
+      if (this.mode === "talk" && this.voiceMs >= 500 && now - this.lastVoice > 1000) this.handOver();
     };
     src.connect(node);
     this.outCtx = new AudioContext({ sampleRate: OUT_RATE });
@@ -164,14 +215,58 @@ class LiveVoice {
     this.outAnalyser.connect(this.outCtx.destination);
   }
 
+  /** The person has finished: tell Gemini the question is complete and pause the mic until it answers. */
+  private handOver() {
+    this.voiceMs = 0;
+    this.uploading = false;
+    this.modelBusy = false;
+    this.turnDone = false;
+    this.dropAudio = false;
+    this.waitingSince = performance.now();
+    if (this.session) this.session.sendRealtimeInput({ audioStreamEnd: true });
+    else this.endAfterFlush = true; // finished before the line opened: end it right after the flush
+    if (!assistant.get().messages.some((x) => x.id === "live-user")) assistant.stream("live-user", "user", "");
+    assistant.setLive({ status: "thinking" });
+  }
+
+  /** SEAL has finished (or was interrupted): listen again. */
+  private resume() {
+    this.uploading = true;
+    this.voiceMs = 0;
+    this.lastVoice = 0;
+    this.waitingSince = 0;
+    this.modelBusy = false;
+    this.turnDone = false;
+    assistant.set((s) => ({ messages: s.messages.filter((x) => !(x.id === "live-user" && !x.text.trim())) }));
+    if (!this.stopped) assistant.setLive({ status: "listening" });
+  }
+
+  /** Tap the orb while SEAL is talking: stop it and listen straight away. */
+  interrupt() {
+    if (this.mode !== "talk" || this.uploading) return;
+    this.stopPlayback();
+    this.dropAudio = true;
+    this.closeCaption("live-bot");
+    this.resume();
+  }
+
   private onMessage(m: LiveServerMessage) {
     const sc = m.serverContent;
+    if (m.toolCall || sc?.modelTurn || sc?.outputTranscription) {
+      this.modelBusy = true;
+      // Gemini may decide the question is over on its own: pause the mic all the same.
+      if (this.mode === "talk" && this.uploading && !this.dropAudio) {
+        this.uploading = false;
+        this.voiceMs = 0;
+        this.waitingSince = performance.now();
+      }
+    }
     if (sc?.interrupted) this.stopPlayback();
-    for (const p of sc?.modelTurn?.parts ?? []) if (p.inlineData?.data && this.mode === "talk") this.play(p.inlineData.data);
+    for (const p of sc?.modelTurn?.parts ?? []) if (p.inlineData?.data && this.mode === "talk" && !this.dropAudio) this.play(p.inlineData.data);
     if (sc?.inputTranscription?.text) {
       this.userCaption += sc.inputTranscription.text;
       assistant.stream("live-user", "user", sc.inputTranscription.text);
-      if (assistant.get().live.status !== "speaking") assistant.setLive({ status: "listening" });
+      if (this.uploading && assistant.get().live.status !== "speaking") assistant.setLive({ status: "listening" });
     }
     if (sc?.outputTranscription?.text) {
       if (this.userCaption) this.closeCaption("live-user");
@@ -181,6 +276,11 @@ class LiveVoice {
     if (sc?.turnComplete) {
       this.closeCaption("live-user");
       this.closeCaption("live-bot");
+      if (this.dropAudio) this.dropAudio = false;
+      else if (this.mode === "talk") {
+        this.turnDone = true;
+        if (!this.playing.size) this.resume(); // otherwise when the last of SEAL's voice has played
+      }
     }
     if (m.toolCall?.functionCalls?.length) void this.onTools(m.toolCall.functionCalls);
   }
@@ -237,7 +337,9 @@ class LiveVoice {
     this.playing.add(src);
     src.onended = () => {
       this.playing.delete(src);
-      if (!this.playing.size && assistant.get().live.status === "speaking") assistant.setLive({ status: "listening" });
+      if (this.playing.size) return;
+      if (this.turnDone && !this.uploading) this.resume();
+      else if (assistant.get().live.status === "speaking") assistant.setLive({ status: "thinking" });
     };
     assistant.setLive({ status: "speaking" });
   }
@@ -255,6 +357,14 @@ class LiveVoice {
   /** Orb level: the speaker's voice while listening, SEAL's voice while speaking. */
   private tick = () => {
     if (this.stopped) return;
+    // Nothing came back: say so and listen again, instead of waiting silently.
+    const now = performance.now();
+    if (this.mode === "talk" && !this.uploading && this.waitingSince) {
+      if (!this.modelBusy && now - this.waitingSince > 8000) {
+        assistant.say({ role: "note", text: "I didn't catch that. Please say it again." });
+        this.resume();
+      } else if (this.modelBusy && !this.playing.size && now - this.waitingSince > 45000) this.resume();
+    }
     let out = 0;
     if (this.outAnalyser && this.playing.size) {
       const a = new Uint8Array(this.outAnalyser.fftSize);
@@ -269,6 +379,13 @@ class LiveVoice {
 
   text(t: string) {
     assistant.say({ role: "user", text: t });
+    if (this.mode === "talk") {
+      this.uploading = false;
+      this.modelBusy = false;
+      this.turnDone = false;
+      this.waitingSince = performance.now();
+      assistant.setLive({ status: "thinking" });
+    }
     this.session?.sendRealtimeInput({ text: t });
   }
 

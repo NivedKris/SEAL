@@ -362,12 +362,32 @@ function BeginGate({ onBegin }: { onBegin: () => void }) {
       initial={{ opacity: 1 }}
       exit={{ opacity: 0, filter: "blur(12px)", scale: 1.04 }}
       transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
-      className="fixed inset-0 z-[80] flex cursor-pointer flex-col items-center justify-center bg-[#e6ede9]/75 px-6 backdrop-blur-2xl"
+      className="fixed inset-0 z-[80] flex cursor-pointer flex-col items-center justify-center overflow-hidden bg-[#e6ede9] px-6"
       onClick={onBegin}
       role="button"
       aria-label="Press anywhere to continue"
     >
-      <div className="flex items-end font-serif text-[84px] font-extrabold leading-none tracking-[-0.02em] text-ink sm:text-[120px]" aria-hidden>
+      {/* a UAE hospital, quietly in the background (muted, so it may play before any tap) */}
+      <motion.video
+        src="/video/seal_video.mp4"
+        poster="/video/seal_poster.jpg"
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="auto"
+        aria-hidden
+        initial={{ opacity: 0, scale: 1.06 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 2.4, ease: [0.22, 1, 0.36, 1] }}
+        className="pointer-events-none absolute inset-0 h-full w-full object-cover motion-reduce:hidden"
+      />
+      {/* a pale veil so the letters stay crisp over any frame */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(238,242,240,0.78)_0%,rgba(238,242,240,0.55)_45%,rgba(230,237,233,0.35)_100%)]" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[38%] bg-gradient-to-t from-[#e6ede9]/90 via-[#e6ede9]/45 to-transparent" />
+      {/* a frosted glow behind the wordmark, so it reads over any frame of the video */}
+      <div className="pointer-events-none absolute left-1/2 top-1/2 h-[240px] w-[min(560px,92vw)] -translate-x-1/2 -translate-y-[62%] rounded-[50%] bg-[#eef2f0]/70 blur-2xl" />
+      <div className="relative flex items-end font-serif text-[84px] font-extrabold leading-none tracking-[-0.02em] text-ink drop-shadow-[0_2px_24px_rgba(238,242,240,0.9)] sm:text-[120px]" aria-hidden>
         {LETTERS.map((l, i) => (
           <motion.span
             key={l}
@@ -387,9 +407,9 @@ function BeginGate({ onBegin }: { onBegin: () => void }) {
       </div>
       <motion.p
         initial={{ opacity: 0 }}
-        animate={{ opacity: [0, 1, 0.45, 1] }}
+        animate={{ opacity: [0, 1, 0.7, 1] }}
         transition={{ delay: dotAt + 0.9, duration: 2.4, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" }}
-        className="mt-12 text-[12px] font-light tracking-[0.38em] text-ink/60"
+        className="absolute inset-x-0 bottom-[max(48px,9vh)] text-center text-[12px] font-medium tracking-[0.36em] text-ink [text-shadow:0_1px_14px_rgba(238,242,240,0.95),0_0_2px_rgba(238,242,240,0.9)]"
       >
         {touch ? "TAP ANYWHERE TO CONTINUE" : "PRESS ANYWHERE TO CONTINUE"}
       </motion.p>

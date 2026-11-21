@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { ArrowUp, Check, FileText, Mic, MicOff, Pill, Radio, RotateCw, Send, Stethoscope, Undo2, Wrench, X, ArrowRight, MessageSquare } from "lucide-react";
 import { Orb } from "./orb";
 import { assistant, useAssistant, type Mode, type Proposal } from "./store";
-import { startLive, stopLive, sendLiveText } from "./live";
+import { startLive, stopLive, sendLiveText, interruptLive } from "./live";
 import { applyProposal } from "./apply";
 import { CodeChip } from "@/components/shared/code-chip";
 import { cn } from "@/lib/utils";
@@ -253,14 +253,21 @@ function LiveBar({ text, setText, send }: { text: string; setText: (t: string) =
     return () => clearInterval(t);
   }, []);
   const secs = s.live.startedAt ? Math.max(0, Math.round((now - s.live.startedAt) / 1000)) : 0;
-  const label = s.live.status === "connecting" ? "Connecting…" : s.live.status === "listening" ? (s.mode === "scribe" ? "Listening to the consultation" : "Listening") : s.live.status === "thinking" ? "Looking it up…" : s.live.status === "speaking" ? "SEAL is speaking" : s.live.status === "error" ? "Voice is unavailable" : "Voice is off";
+  const label = s.live.status === "connecting" ? "Connecting…" : s.live.status === "listening" ? (s.live.level > 0.04 ? "Hearing you…" : s.mode === "scribe" ? "Listening to the consultation" : "Listening") : s.live.status === "thinking" ? "Got it, thinking…" : s.live.status === "speaking" ? "SEAL is speaking" : s.live.status === "error" ? "Voice is unavailable" : "Voice is off";
   return (
     <div className="border-t border-ink/[0.06] px-5 py-4">
       {s.live.status === "error" && <p className="mb-3 rounded-xl bg-[#c2473c]/10 px-3 py-2 text-[12.5px] text-[#b23b31]">{s.live.error}</p>}
       <div className="flex items-center gap-4">
-        <Orb size={56} status={s.live.status} level={s.live.level} />
+        <button
+          onClick={() => (s.mode === "talk" && (s.live.status === "speaking" || s.live.status === "thinking") ? interruptLive() : undefined)}
+          className={cn("rounded-full", s.mode === "talk" && (s.live.status === "speaking" || s.live.status === "thinking") ? "cursor-pointer" : "cursor-default")}
+          aria-label={s.live.status === "speaking" ? "Interrupt SEAL" : "SEAL"}
+        >
+          <Orb size={56} status={s.live.status} level={s.live.level} />
+        </button>
         <div className="min-w-0 flex-1">
           <div className="text-[15px] font-normal">{label}</div>
+          {s.mode === "talk" && (s.live.status === "speaking" || s.live.status === "thinking") && <div className="text-[11px] font-light text-ink/45">Tap the orb to interrupt</div>}
           <div className="dot text-[13px] text-ink/45">
             {String(Math.floor(secs / 60)).padStart(2, "0")}:{String(secs % 60).padStart(2, "0")}
           </div>

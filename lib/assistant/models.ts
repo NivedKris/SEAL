@@ -3,7 +3,10 @@
  * were verified against this key by opening sessions with them.
  */
 /** Voice: talks, listens and calls SEAL's tools. The second is used if the first is unavailable. */
-export const LIVE_MODELS = ["gemini-3.8-live", "gemini-2.5-flash-native-audio-preview-09-2025"];
+// Tested with real speech in a noisy room (hiss + air-conditioner hum): the 2.5 native-audio model
+// heard and answered 5 of 5 questions; 3.8 Live only 2-3 of 5 (it often waits for a turn end that
+// never comes). So 2.5 leads and 3.8 is the backup.
+export const LIVE_MODELS = ["gemini-2.5-flash-native-audio-preview-09-2025", "gemini-3.8-live"];
 export const LIVE_VOICE = "Aoede";
 /** Speech to text only (the consultation scribe). */
 export const TRANSCRIBE_MODEL = "gemini-3.5-transcribe-live";
