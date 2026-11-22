@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Source_Serif_4, Geist_Mono, Noto_Sans_Arabic, Doto } from "next/font/google";
+import localFont from "next/font/local";
 import { TopBar } from "@/components/shell/top-bar";
 import { Splash } from "@/components/shell/splash";
 import { Assistant } from "@/components/assistant/assistant";
@@ -7,11 +7,13 @@ import { currentTenant } from "@/lib/tenant-server";
 import { Install } from "@/components/pwa/install";
 import "./globals.css";
 
-const inter = Inter({ variable: "--font-sans", subsets: ["latin"] });
-const serif = Source_Serif_4({ variable: "--font-source-serif", subsets: ["latin"], weight: ["600", "700", "800"] });
-const mono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
-const dot = Doto({ variable: "--font-dot", subsets: ["latin"], weight: ["500", "700", "900"] });
-const arabic = Noto_Sans_Arabic({ variable: "--font-arabic", subsets: ["arabic"], weight: ["400", "500", "600", "700"] });
+// Fonts ship with the app (app/fonts, variable files from Google Fonts, SIL Open Font License), so a
+// build never depends on downloading them: a failed download from Google broke the Vercel build.
+const inter = localFont({ src: "./fonts/inter.woff2", variable: "--font-sans", weight: "100 900", display: "swap" });
+const serif = localFont({ src: "./fonts/source-serif-4.woff2", variable: "--font-source-serif", weight: "600 800", display: "swap" });
+const mono = localFont({ src: "./fonts/geist-mono.woff2", variable: "--font-geist-mono", weight: "100 900", display: "swap" });
+const dot = localFont({ src: "./fonts/doto.woff2", variable: "--font-dot", weight: "100 900", display: "swap" });
+const arabic = localFont({ src: "./fonts/noto-sans-arabic.woff2", variable: "--font-arabic", weight: "400 700", display: "swap" });
 
 export const metadata: Metadata = {
   title: { default: "SEAL", template: "%s · SEAL" },
