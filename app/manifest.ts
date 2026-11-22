@@ -1,13 +1,13 @@
 import type { MetadataRoute } from "next";
 
-/** SEAL as an installable app: opens straight into the hospital's Today screen, full screen, no browser bar. */
+/** SEAL as an installable app: always opens on the opening film (video, SEAL letters, then the story), full screen, no browser bar. */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    id: "/start",
+    id: "/",
     name: "SEAL",
     short_name: "SEAL",
     description: "Every claim, complete. SEAL catches insurance claim refusals before they happen.",
-    start_url: "/start",
+    start_url: "/",
     scope: "/",
     display: "standalone",
     display_override: ["window-controls-overlay", "standalone"],
