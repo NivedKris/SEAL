@@ -2,7 +2,12 @@
 
 import { SealLoader } from "@/components/brand/seal-loader";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { tabKey } from "@/lib/assistant/sitemap";
+import { useAssistantScreen } from "@/components/assistant/store";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useData } from "@/lib/client/data";
+import { claimsUrl, REFUSED_COUNT } from "@/lib/client/page-data";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowRight, CheckCircle2, Hand, ShieldCheck } from "lucide-react";
 import Stack from "@/components/Stack";
@@ -47,26 +52,37 @@ const greeting = () => {
 };
 
 export function BillingQueues() {
-  const [tab, setTab] = useState<(typeof TABS)[number]["key"]>("hold");
-  const [counts, setCounts] = useState<Record<string, number>>({});
-  const [rows, setRows] = useState<Row[] | null>(null);
-  const [refusedCount, setRefusedCount] = useState<number | null>(null);
+  // The tab lives in the link (?tab=ready), so Today, the assistant and the back button can open any tab.
+  const params = useSearchParams();
+  const router = useRouter();
+  const tab = (tabKey(params.get("tab")) ?? "hold") as (typeof TABS)[number]["key"];
+  const setTab = (t: string) => router.replace(`/billing?tab=${t}`, { scroll: false });
+  // ?ids=…&title=…: a list of claims SEAL put together ("Your last 10 claims").
+  const ids = params.get("ids");
+  const picked = useData<{ claims: Row[] }>(ids ? `/api/claims?ids=${ids}` : null);
+
   const [toasts, setToasts] = useState<{ id: number; claimNo: string; amount: number; paid: boolean }[]>([]);
   const cursor = useRef(0);
+  const lastCounts = useRef<Record<string, number>>({});
   const current = TABS.find((t) => t.key === tab)!;
 
-  const load = useCallback(async () => {
-    const r = await fetch(`/api/claims?status=${current.statuses.join(",")}&limit=60&scope=live`).then((x) => x.json());
-    setCounts(r.counts ?? {});
-    setRows(r.claims ?? []);
-  }, [current.statuses]);
-  useEffect(() => {
-    setRows(null);
-    void load();
-  }, [load]);
-  useEffect(() => {
-    fetch("/api/recovery").then((r) => r.json()).then((r) => setRefusedCount(r.rows?.length ?? 0)).catch(() => {});
-  }, []);
+  // Each tab's claims come through the page cache: a tab seen before shows at once, then refreshes.
+  const list = useData<{ claims: Row[]; counts: Record<string, number> }>(claimsUrl(current.statuses));
+  const rows = list.data?.claims ?? null;
+  const counts = list.data?.counts ?? lastCounts.current;
+  if (list.data?.counts) lastCounts.current = list.data.counts;
+  // Tell the assistant what is listed (the Refused tab reports its own list).
+  const shownRows = ids ? (picked.data?.claims ?? null) : tab === "refused" ? null : rows;
+  useAssistantScreen(
+    shownRows && {
+      title: ids ? (params.get("title") ?? "Claims SEAL found") : "Claims",
+      tab: ids ? undefined : TABS.find((t) => t.key === tab)?.label,
+      items: shownRows.slice(0, 40).map((c) => ({ id: c._id, kind: "claim", label: `${c.claimNo} · ${c.patientName ?? ""} · ${c.payerName ?? ""} · ${c.status} · AED ${c.net}` })),
+    },
+  );
+  const refusedCount = useData<{ total: { claims: number } }>(REFUSED_COUNT).data?.total.claims ?? null;
+  const reload = list.reload;
+  const load = useCallback(() => void reload().catch(() => {}), [reload]);
 
   // Other people's actions (doctor answers, remittances): poll the event feed every 1.5 s.
   const out = (counts.submitted ?? 0) + (counts.resubmitted ?? 0) > 0;
@@ -116,6 +132,20 @@ export function BillingQueues() {
       </div>
       </div>
 
+      {ids && (
+        <section className="mt-10">
+          <div className="flex flex-wrap items-baseline justify-between gap-3">
+            <h2 className="display text-[26px] md:text-[30px]">{params.get("title") || "Claims SEAL found for you"}</h2>
+            <button onClick={() => router.replace("/billing", { scroll: false })} className="text-[14px] text-muted-foreground hover:text-foreground">
+              Back to all claims
+            </button>
+          </div>
+          <div className="mt-5">{picked.data ? picked.data.claims.length ? <List rows={picked.data.claims} /> : <p className="text-muted-foreground">None of those claims were found.</p> : <SealLoader label="Loading claims" />}</div>
+        </section>
+      )}
+
+      {!ids && (
+        <>
       <AnimatePresence mode="wait">
         <motion.div key={tab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.3 }} className="mt-10">
           {tab === "refused" ? (
@@ -135,6 +165,8 @@ export function BillingQueues() {
           )}
         </motion.div>
       </AnimatePresence>
+        </>
+      )}
 
       {/* Payment toasts */}
       <div className="pointer-events-none fixed bottom-8 right-8 z-50 space-y-3">

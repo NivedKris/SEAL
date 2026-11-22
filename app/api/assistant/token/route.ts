@@ -4,15 +4,12 @@ import { handle } from "@/lib/api/respond";
 import { assistantGeminiKey } from "@/lib/assistant/keys";
 import { currentTenant } from "@/lib/tenant-server";
 import { db } from "@/lib/db/mongo";
-import { COLLECTIONS as C } from "@/lib/db/schemas";
-import { hospitalProfile } from "@/lib/hospital/profile";
-import { insurerName } from "@/lib/hospital/names";
-import { ALL_TOOLS, LIVE_TOOLS, systemInstruction } from "@/lib/assistant/tools";
+import { ALL_TOOLS, ContextSchema, LIVE_TOOLS, namesHint, systemInstruction } from "@/lib/assistant/tools";
 import { LIVE_MODELS, LIVE_VOICE } from "@/lib/assistant/models";
 
 export const dynamic = "force-dynamic";
 
-const Body = z.object({ context: z.object({ path: z.string(), encounterId: z.string().optional(), claimId: z.string().optional(), questionSetId: z.string().optional() }), mode: z.enum(["talk", "scribe"]).default("talk") });
+const Body = z.object({ context: ContextSchema, mode: z.enum(["talk", "scribe"]).default("talk") });
 
 /**
  * A single-use token for one live voice session (the API key never reaches the browser), plus the
@@ -27,10 +24,7 @@ export async function POST(req: Request) {
       config: { uses: 1, expireTime: new Date(Date.now() + 30 * 60_000).toISOString(), newSessionExpireTime: new Date(Date.now() + 2 * 60_000).toISOString(), httpOptions: { apiVersion: "v1alpha" } },
     });
     // Names people will say out loud, so a noisy "Succouron" is understood as Sukoon.
-    const d = await db();
-    const [payers, providers, hp] = await Promise.all([d.collection(C.payers).find({}, { projection: { name: 1 } }).toArray(), d.collection(C.providers).find({}, { projection: { name: 1 } }).toArray(), hospitalProfile(d)]);
-    const insurers = [...new Set([...payers.map((p) => String(p.name)), ...(hp?.byInsurer.slice(0, 15).map((x) => insurerName(x.insurer)) ?? [])])];
-    const names = `\nNames people may say (match what you hear to these, even if it sounds slightly different): insurers ${insurers.join(", ")}; doctors ${providers.map((p) => String(p.name)).join(", ")}. Claims are named like "L000004" ("L four").`;
+    const names = await namesHint(await db());
     const scribe =
       mode === "scribe"
         ? [

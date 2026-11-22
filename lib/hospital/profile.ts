@@ -150,5 +150,11 @@ export function buildProfile(hospital: string, input: HospitalClaim[]): Omit<Hos
 
 /** The hospital's profile in this database, or null for hospitals without their own history (Basic). */
 export async function hospitalProfile(d: Db): Promise<HospitalProfile | null> {
-  return (await d.collection<HospitalProfile>(HOSPITAL_PROFILE).findOne({ _id: "profile" })) ?? null;
+  // It only changes when the hospital's history is imported again, so keep it in memory for a minute.
+  const hit = profileCache.get(d.databaseName);
+  if (hit && Date.now() - hit.at < 60_000) return hit.value;
+  const value = (await d.collection<HospitalProfile>(HOSPITAL_PROFILE).findOne({ _id: "profile" })) ?? null;
+  profileCache.set(d.databaseName, { at: Date.now(), value });
+  return value;
 }
+const profileCache = new Map<string, { at: number; value: HospitalProfile | null }>();

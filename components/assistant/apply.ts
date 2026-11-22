@@ -1,6 +1,8 @@
 "use client";
 
 import { assistant, sendToPage, type Proposal } from "./store";
+import { load } from "@/lib/client/data";
+import { REFUSED_COUNT } from "@/lib/client/page-data";
 
 /**
  * Carries out a proposal the person accepted, through SEAL's normal actions (the same ones the
@@ -44,6 +46,16 @@ export async function applyProposal(p: Proposal, navigate: (path: string) => voi
         sendToPage({ kind: "refresh" });
         break;
       }
+      case "request_prior_approval": {
+        if (!page.encounterId) throw new Error("Open the patient's visit first.");
+        const enc = await json(`/api/emr/encounters/${page.encounterId}`);
+        const o = (enc.orders as { _id: string; code: string; justificationStatus: string }[]).find((x) => x.code === a.code && x.justificationStatus !== "removed");
+        if (!o) throw new Error(`No ${a.code} order on this visit.`);
+        const r = await json(`/api/emr/encounters/${page.encounterId}/prior-auth`, { method: "POST", body: JSON.stringify({ orderId: o._id }) });
+        assistant.updateProposal(p.id, { args: { ...p.args, authNo: r.authNo, validTo: r.validTo } });
+        sendToPage({ kind: "refresh" });
+        break;
+      }
       case "apply_claim_fix": {
         if (!page.claimId) throw new Error("Open the claim first.");
         const { fixes } = await json(`/api/claims/${page.claimId}/fixes`);
@@ -59,6 +71,7 @@ export async function applyProposal(p: Proposal, navigate: (path: string) => voi
                 : null;
         if (!body) throw new Error("This one needs a person: it is on the claim's Fix it panel.");
         await json(`/api/claims/${page.claimId}/fixes`, { method: "POST", body: JSON.stringify(body) });
+        sendToPage({ kind: "refresh" });
         break;
       }
       case "answer_question": {
@@ -91,6 +104,42 @@ export async function applyProposal(p: Proposal, navigate: (path: string) => voi
           sent++;
         }
         assistant.updateProposal(p.id, { note: undefined, args: { ...p.args, sent } });
+        sendToPage({ kind: "refresh" });
+        break;
+      }
+      case "apply_recovery_fix": {
+        const id = a.claimId || page.claimId;
+        if (!id) throw new Error("Open the refused claim first.");
+        const t = a.fix;
+        const body =
+          t === "add_diagnosis" || t === "remove_diagnosis"
+            ? { type: t, code: a.code }
+            : t === "set_quantity"
+              ? { type: t, activityId: String(a.activityId), quantity: Number(a.quantity) }
+              : t === "attach_auth"
+                ? { type: t, activityId: String(a.activityId), authNo: a.authNo }
+                : { type: t, activityId: String(a.activityId) };
+        await json(`/api/claims/${id}/recovery`, { method: "POST", body: JSON.stringify(body) });
+        await load(`/api/claims/${id}/recovery`).catch(() => {});
+        break;
+      }
+      case "draft_recovery_letter": {
+        const id = a.claimId || page.claimId;
+        if (!id) throw new Error("Open the refused claim first.");
+        await json(`/api/recovery/${id}/draft`, { method: "POST" });
+        await load(`/api/claims/${id}/recovery`).catch(() => {});
+        break;
+      }
+      case "resubmit_claim": {
+        const id = a.claimId || page.claimId;
+        if (!id) throw new Error("Open the refused claim first.");
+        const plan = await json(`/api/claims/${id}/recovery`);
+        const d = plan.draft;
+        if (!d) throw new Error("Nothing is prepared yet: apply a fix or draft the letter first.");
+        if ((d.letter ?? "").trim().length < 10) throw new Error("The letter is empty: have SEAL draft it first.");
+        await json(`/api/recovery/drafts/${d.id}/approve`, { method: "POST", headers: { "x-seal-user": "noura-al-mansoori" }, body: JSON.stringify({ type: a.type === "correction" || a.type === "appeal" ? a.type : d.type, letter: d.letter, ...(d.diagnoses ? { diagnoses: d.diagnoses } : {}), lineEdits: d.lineEdits }) });
+        await load(`/api/claims/${id}/recovery`).catch(() => {});
+        await load(REFUSED_COUNT).catch(() => {});
         sendToPage({ kind: "refresh" });
         break;
       }

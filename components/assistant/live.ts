@@ -2,6 +2,7 @@
 
 import { GoogleGenAI, Modality, type FunctionDeclaration, type LiveServerMessage, type Session } from "@google/genai";
 import { assistant, type Mode } from "./store";
+import { contextNow, runScreenTool } from "./screen";
 
 /**
  * One live voice session with Gemini Live: the microphone streams in, SEAL's voice streams out,
@@ -9,7 +10,11 @@ import { assistant, type Mode } from "./store";
  * proposals on screen). The API key never reaches the browser: the server issues a one-use token.
  */
 type Setup = { token: string; models: string[]; voice: string; systemInstruction: string; tools: FunctionDeclaration[] };
-const PROPOSED = "Proposed. It is on the person's screen waiting for them to accept or reject.";
+const PROPOSED = "Proposed (nothing changed yet). It is on screen as a card. Ask in a few words whether to go ahead; call confirm_change with this proposalId only if they clearly say yes.";
+// The live model sometimes acts (opens a screen, looks something up) and then closes its turn
+// without a word. When that happens it is asked once, quietly, to say what it did.
+const NUDGE = "(The results of your last action are in. Now tell the person, in one or two short sentences, what you did or found.)";
+const SCREEN = new Set(["navigate", "offer_navigation", "get_screen", "go_back", "confirm_change", "reject_change"]);
 const IN_RATE = 16000;
 const OUT_RATE = 24000;
 
@@ -78,6 +83,9 @@ class LiveVoice {
   private userCaption = "";
   private botCaption = "";
   private stopped = false;
+  private afterTool = false;
+  private spokeSinceTool = false;
+  private nudged = false;
 
   constructor(private mode: Exclude<Mode, "chat">) {}
 
@@ -85,8 +93,7 @@ class LiveVoice {
     assistant.setLive({ status: "connecting", level: 0, error: undefined, startedAt: Date.now() });
     try {
       await this.openMic();
-      const st = assistant.get();
-      const ctx = { path: st.path, encounterId: st.page.encounterId, claimId: st.page.claimId, questionSetId: st.page.questionSetId };
+      const ctx = contextNow();
       let lastErr: unknown;
       // The newest live model first; the next one if it cannot open (each attempt gets a fresh token).
       for (let i = 0; i < 2 && !this.session; i++) {
@@ -217,6 +224,7 @@ class LiveVoice {
 
   /** The person has finished: tell Gemini the question is complete and pause the mic until it answers. */
   private handOver() {
+    this.afterTool = this.spokeSinceTool = this.nudged = false;
     this.voiceMs = 0;
     this.uploading = false;
     this.modelBusy = false;
@@ -262,6 +270,7 @@ class LiveVoice {
       }
     }
     if (sc?.interrupted) this.stopPlayback();
+    if (sc?.outputTranscription?.text || sc?.modelTurn?.parts?.some((p) => p.inlineData?.data)) this.spokeSinceTool = true;
     for (const p of sc?.modelTurn?.parts ?? []) if (p.inlineData?.data && this.mode === "talk" && !this.dropAudio) this.play(p.inlineData.data);
     if (sc?.inputTranscription?.text) {
       this.userCaption += sc.inputTranscription.text;
@@ -272,6 +281,13 @@ class LiveVoice {
       if (this.userCaption) this.closeCaption("live-user");
       this.botCaption += sc.outputTranscription.text;
       assistant.stream("live-bot", "assistant", sc.outputTranscription.text);
+    }
+    if (sc?.turnComplete && this.mode === "talk" && !this.dropAudio && this.afterTool && !this.spokeSinceTool && !this.nudged && this.session) {
+      // acted but said nothing: ask it to say what it did, and keep waiting for that
+      this.nudged = true;
+      const s = this.session;
+      setTimeout(() => s.sendRealtimeInput({ text: NUDGE }), 250);
+      return;
     }
     if (sc?.turnComplete) {
       this.closeCaption("live-user");
@@ -297,21 +313,22 @@ class LiveVoice {
 
   private async onTools(calls: { id?: string; name?: string; args?: Record<string, unknown> }[]) {
     assistant.setLive({ status: "thinking" });
-    const st = assistant.get();
-    const context = { path: st.path, encounterId: st.page.encounterId, claimId: st.page.claimId, questionSetId: st.page.questionSetId };
+    const context = contextNow();
     const responses = await Promise.all(
       calls.map(async (fc) => {
         const name = fc.name ?? "";
         const args = fc.args ?? {};
         if (name === "show_details") {
           // the written answer appears in the panel while the summary is spoken
-          if (typeof args.text === "string" && args.text.trim()) assistant.say({ role: "assistant", text: args.text });
+          if (typeof args.text === "string" && args.text.trim()) assistant.say({ role: "assistant", text: args.text, detail: true });
           return { id: fc.id, name, response: { status: "Shown on screen. Now say a short summary out loud." } };
         }
         if (WRITE.has(name)) {
-          assistant.propose(name, args);
-          return { id: fc.id, name, response: { status: PROPOSED } };
+          const p = assistant.propose(name, args);
+          return { id: fc.id, name, response: { status: PROPOSED, proposalId: p.id } };
         }
+        // Moving around SEAL, reading the screen, or a change they just said yes to: done in the browser.
+        if (SCREEN.has(name)) return { id: fc.id, name, response: await runScreenTool(name, args).catch((e) => ({ error: String(e) })) };
         const r = await fetch("/api/assistant/tool", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name, args, context }) })
           .then((x) => x.json())
           .catch((e) => ({ result: { error: String(e) } }));
@@ -319,6 +336,8 @@ class LiveVoice {
       }),
     );
     this.session?.sendToolResponse({ functionResponses: responses });
+    this.afterTool = true;
+    this.spokeSinceTool = false;
   }
 
   private play(data: string) {
@@ -378,6 +397,7 @@ class LiveVoice {
   };
 
   text(t: string) {
+    this.afterTool = this.spokeSinceTool = this.nudged = false;
     assistant.say({ role: "user", text: t });
     if (this.mode === "talk") {
       this.uploading = false;
@@ -407,7 +427,7 @@ class LiveVoice {
   }
 }
 
-const WRITE = new Set(["update_note", "add_diagnosis", "add_order", "remove_order", "answer_question", "apply_claim_fix", "send_claim", "send_ready_claims", "recheck_claim", "open_page"]);
+const WRITE = new Set(["update_note", "add_diagnosis", "add_order", "remove_order", "request_prior_approval", "apply_recovery_fix", "draft_recovery_letter", "resubmit_claim", "answer_question", "apply_claim_fix", "send_claim", "send_ready_claims", "recheck_claim"]);
 
 function friendly(e: unknown) {
   const m = e instanceof Error ? e.message : String(e);

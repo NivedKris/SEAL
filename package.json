@@ -23,7 +23,9 @@
     "learning:run": "NODE_OPTIONS=--conditions=react-server node --env-file=.env node_modules/.bin/tsx scripts/dev/phase7-learning.ts",
     "history:import": "NODE_OPTIONS=--conditions=react-server node --env-file=.env node_modules/.bin/tsx scripts/history/import.ts",
     "tenant:apollo": "NODE_OPTIONS=--conditions=react-server node --env-file=.env node_modules/.bin/tsx scripts/tenants/build-apollo.ts",
-    "tenant:apollo:memory": "NODE_OPTIONS=--conditions=react-server node --env-file=.env node_modules/.bin/tsx scripts/tenants/apollo-memory.ts"
+    "tenant:apollo:memory": "NODE_OPTIONS=--conditions=react-server node --env-file=.env node_modules/.bin/tsx scripts/tenants/apollo-memory.ts",
+    "perf": "bash scripts/perf.sh",
+    "assistant:eval": "NODE_OPTIONS=--conditions=react-server node --env-file=.env node_modules/.bin/tsx scripts/assistant/eval.ts"
   },
   "dependencies": {
     "@google/genai": "^3.6.1",

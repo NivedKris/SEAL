@@ -19,19 +19,22 @@ export async function GET(req: Request) {
     const d = await db();
     const statuses = status ? status.split(",").map((s) => ClaimStatus.parse(s)) : null;
     const live = url.searchParams.get("scope") === "live";
-    const filter = { evalSet: false, ...(statuses ? { status: { $in: statuses } } : {}), ...(live ? { claimNo: /-L\d+$/ } : {}) };
-    const [claims, counts] = await Promise.all([
-      d.collection(C.claims).find(filter, { projection: { "versions.xml": 0 } }).sort({ createdAt: -1, _id: -1 }).limit(limit).toArray(),
+    // ?ids=a,b,c: exactly these claims, in this order (a list SEAL's assistant put together).
+    const ids = url.searchParams.get("ids")?.split(",").filter((x) => /^[A-Za-z0-9._-]{1,64}$/.test(x)).slice(0, 50) ?? null;
+    const filter = ids ? { _id: { $in: ids as never[] } } : { evalSet: false, ...(statuses ? { status: { $in: statuses } } : {}), ...(live ? { claimNo: /-L\d+$/ } : {}) };
+    const [found, counts] = await Promise.all([
+      d.collection(C.claims).find(filter, { projection: { "versions.xml": 0 } }).sort({ createdAt: -1, _id: -1 }).limit(ids ? 50 : limit).toArray(),
       d.collection(C.claims).aggregate([{ $match: { evalSet: false, claimNo: /-L\d+$/ } }, { $group: { _id: "$status", n: { $sum: 1 } } }]).toArray(),
     ]);
-    const [pats, payers, provs] = await Promise.all([
+    const claims = ids ? [...found].sort((a, b) => ids.indexOf(String(a._id)) - ids.indexOf(String(b._id))) : found;
+    // Names, plus when the insurer's answer is due (mock post office) and what was paid, for the journey view.
+    const [pats, payers, provs, files, rems] = await Promise.all([
       d.collection(C.patients).find({ _id: { $in: claims.map((c) => c.patientId) } }, { projection: { name: 1 } }).toArray(),
       d.collection(C.payers).find({}, { projection: { name: 1 } }).toArray(),
       d.collection(C.providers).find({}, { projection: { name: 1 } }).toArray(),
+      d.collection(C.mockDhpo).find({ kind: "Claim.Submission", claimIds: { $in: claims.map((c) => c.claimNo) } }, { projection: { claimIds: 1, readyAt: 1, uploadedAt: 1 } }).sort({ uploadedAt: -1 }).toArray(),
+      d.collection(C.remittances).find({ claimId: { $in: claims.map((c) => c._id) } }, { projection: { claimId: 1, receivedAt: 1, lines: 1 } }).sort({ receivedAt: -1 }).toArray(),
     ]);
-    // When the insurer's answer is due (mock post office), and what was paid, for the journey view.
-    const files = await d.collection(C.mockDhpo).find({ kind: "Claim.Submission", claimIds: { $in: claims.map((c) => c.claimNo) } }, { projection: { claimIds: 1, readyAt: 1, uploadedAt: 1 } }).sort({ uploadedAt: -1 }).toArray();
-    const rems = await d.collection(C.remittances).find({ claimId: { $in: claims.map((c) => c._id) } }, { projection: { claimId: 1, receivedAt: 1, lines: 1 } }).sort({ receivedAt: -1 }).toArray();
     const rows = claims.map((c) => ({
       readyAt: files.find((f) => f.claimIds.includes(c.claimNo))?.readyAt,
       sentAt: c.versions.at(-1)?.sentAt,

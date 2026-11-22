@@ -2,8 +2,9 @@
 
 import { SealLoader } from "@/components/brand/seal-loader";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useData } from "@/lib/client/data";
 import { useSearchParams } from "next/navigation";
-import { PAGE_EVENT, setAssistantPage, type PageEvent } from "@/components/assistant/store";
+import { PAGE_EVENT, setAssistantPage, type PageEvent, useAssistantScreen } from "@/components/assistant/store";
 import { ArrowLeft, Check, ChevronRight, Loader2 } from "lucide-react";
 import { SealLogo } from "@/components/brand/seal-logo";
 import { cn } from "@/lib/utils";
@@ -27,20 +28,27 @@ export function DoctorApp() {
   const params = useSearchParams();
   // Opened from a doctor's card on Today: start on that doctor's questions.
   const [providerId, setProviderId] = useState(params.get("providerId") ?? "");
-  const [providers, setProviders] = useState<{ _id: string; name: string }[]>([]);
-  const [sets, setSets] = useState<SetRow[] | null>(null);
+
   const [open, setOpen] = useState<string | null>(params.get("q"));
-  const cursor = useRef(0);
-
-  const load = useCallback(async () => {
-    const r = await fetch(`/api/questions?status=open${providerId ? `&providerId=${providerId}` : ""}`).then((x) => x.json());
-    setSets(r.sets ?? []);
-    setProviders(r.providers ?? []);
-  }, [providerId]);
-
+  // The assistant (or a link) can change the doctor or open a question set while this screen is open.
+  const urlDoctor = params.get("providerId");
+  const urlSet = params.get("q");
   useEffect(() => {
-    void load();
-  }, [load]);
+    if (urlDoctor !== null) setProviderId(urlDoctor);
+  }, [urlDoctor]);
+  useEffect(() => {
+    if (urlSet) setOpen(urlSet);
+  }, [urlSet]);
+  const cursor = useRef(0);
+  const lastProviders = useRef<{ _id: string; name: string }[]>([]);
+
+  const q = useData<{ sets: SetRow[]; providers: { _id: string; name: string }[] }>(`/api/questions?status=open${providerId ? `&providerId=${providerId}` : ""}`);
+  const sets = q.data?.sets ?? null;
+  const providers = q.data?.providers ?? lastProviders.current;
+  if (q.data?.providers) lastProviders.current = q.data.providers;
+  const reload = q.reload;
+  useAssistantScreen(sets && { title: "Questions for doctors", items: sets.slice(0, 40).map((x) => ({ id: x._id, kind: "questions", label: `${x.patientName ?? ""} · ${x.providerName ?? ""} · ${x.questions.length} question${x.questions.length === 1 ? "" : "s"}` })) });
+  const load = useCallback(() => reload().catch(() => {}), [reload]);
   // Watch for new questions: poll domain events every 1.5 s (plan §6).
   useEffect(() => {
     let stop = false;

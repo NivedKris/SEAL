@@ -9,6 +9,7 @@ import { dubaiIso } from "@/lib/util/time";
 import { loadBatch } from "./batch";
 import { runEvaluation } from "./evaluate";
 import { findClusters, proposeRule, MIN_SUPPORT, WINDOW_DAYS } from "./miner";
+import { forget } from "@/lib/perf/memo";
 
 export type CycleStep = { step: string; detail: Record<string, unknown> };
 
@@ -47,6 +48,7 @@ export async function runLearningCycle(d: Db, onStep: (s: CycleStep) => void = (
 
   const cycle = { _id: id, at: dubaiIso(), startedAt: started, newOutcomes, clusters: clusters.length, proposals: proposals.map((p) => p._id), evalRunId: after._id, previousEvalRunId: before?._id };
   await d.collection(C.learningCycles).insertOne(cycle as never);
+  await forget(d);
   await emit("learning.cycle.completed", { cycleId: id, newOutcomes, clusters: clusters.length, proposals: proposals.length, precision: after.precision, recall: after.recall }, { kind: "system", id: "learning" });
   return { cycle, proposals, before, after };
 }

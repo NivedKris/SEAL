@@ -22,6 +22,7 @@ export const EVENT_TYPES = [
   "remittance.received",
   "denial.queued",
   "draft.ready",
+  "recovery.fix_applied",
   "resubmission.sent",
   "outcome.recorded",
   "rule.proposed",

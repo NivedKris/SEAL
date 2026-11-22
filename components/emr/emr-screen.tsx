@@ -3,6 +3,7 @@
 import { SealLoader } from "@/components/brand/seal-loader";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useData } from "@/lib/client/data";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowRight, Check, ExternalLink, Loader2, ShieldCheck, Sparkles, X } from "lucide-react";
@@ -10,7 +11,7 @@ import { SealLogo } from "@/components/brand/seal-logo";
 import ShinyText from "@/components/ShinyText";
 import { CodePicker } from "@/components/shared/code-picker";
 import { cn } from "@/lib/utils";
-import { PAGE_EVENT, setAssistantPage, type PageEvent } from "@/components/assistant/store";
+import { PAGE_EVENT, setAssistantPage, type PageEvent, useAssistantScreen } from "@/components/assistant/store";
 
 // ── Types from the EMR API and SEAL's check API ───────────────────────────────
 type Order = { _id: string; code: string; label: string; kind: string; quantity: number; justificationStatus: string };
@@ -62,10 +63,10 @@ async function api<T>(url: string, init?: RequestInit): Promise<T> {
   return j as T;
 }
 
-export function EmrScreen() {
+export function EmrScreen({ initialList, initialVisit }: { initialList?: Promise<{ encounters: OpenEnc[] } | null>; initialVisit?: Promise<Enc | null> } = {}) {
   const router = useRouter();
   const params = useSearchParams();
-  const [all, setAll] = useState<OpenEnc[]>([]);
+  const all = useData<{ encounters: OpenEnc[] }>("/api/encounters?status=open", { initial: initialList }).data?.encounters ?? [];
   const doctor = params.get("providerId");
   const list = doctor ? all.filter((x) => x.providerId === doctor) : all;
   const id = params.get("e") ?? list[0]?._id ?? null;
@@ -80,17 +81,44 @@ export function EmrScreen() {
   const rev = useRef(0);
   const atRiskSeen = useRef(new Map<string, { title: string; order: string }>());
   const timers = useRef<{ live?: ReturnType<typeof setTimeout>; deep?: ReturnType<typeof setTimeout> }>({});
+  // The open visit and SEAL's live check (the panel on the right), so "what risks has SEAL flagged" can be answered.
+  const details = data
+    ? [
+        `Open visit: ${data.patient.name} (${data.patient.age}, ${data.patient.sex}) with ${data.provider.name}, ${data.insurance.payer} ${data.insurance.plan}. Visit id ${data.encounter._id}.`,
+        `Note: complaint "${note.complaint.slice(0, 240)}"; findings "${note.findings.slice(0, 240)}"; plan "${note.plan.slice(0, 160)}".`,
+        `Diagnoses: ${data.diagnoses.map((x) => `${x.icd10} ${x.description ?? ""}`).join("; ") || "none"}.`,
+        check
+          ? `SEAL's check (the panel on the right, ${check.mode === "deep" ? "checked in depth" : check.mode === "live" ? "checked by the fast AI" : "rules only so far"}): ${check.orders
+              .map((o) => `${o.label} ${o.code}: ${o.status === "justified" ? "supported by the note" : o.status === "at_risk" ? `AT RISK${o.cards.map((c) => ` — ${c.title} (${c.certainty}, would be refused as ${c.denialCode}); insurer needs: ${c.insurerNeeds}${c.missing.length ? `; missing from the note: ${c.missing.map((m) => m.text || m.concept).join(", ")}` : ""}${c.kind === "link_diagnosis" && c.qualifyingCodes?.length ? `; a diagnosis that would qualify: ${c.qualifyingCodes.slice(0, 4).join(", ")}` : ""}; fixes on the card: ${c.fixActions.join(", ") || "none"}${c.kind === "documentation" && c.fixTemplates.length ? `; note template(s) whose ____ blanks the doctor must fill: ${c.fixTemplates.map((t) => `"${t}"`).join(" / ")}` : ""}`).join("")}${(() => {
+                const pa = data.priorAuths.find((p) => p.codes.includes(o.code));
+                return !pa ? " (no prior approval on file for this order)" : (pa as { validTo?: string }).validTo && `${(pa as { validTo?: string }).validTo}` < data.encounter.start.slice(0, 10) ? ` (the approval on file, ${pa.authNo}, EXPIRED on ${(pa as { validTo?: string }).validTo}, before this visit: it does not count)` : ` (a valid prior approval, ${pa.authNo}, is on file for this order)`;
+              })()}` : "still being checked"}`)
+              .join(". ")}. ${resolved.length ? `Already fixed this visit: ${resolved.map((r) => `${r.title} on ${r.order}`).join("; ")}.` : ""}`
+          : "SEAL's check: not run yet.",
+        data.priorAuths.length ? `Prior approvals on file for this patient (each covers ONLY the codes listed): ${data.priorAuths.map((p) => `${p.authNo} covers ${p.codes.join(", ")}${(p as { validTo?: string }).validTo ? `, valid to ${(p as { validTo?: string }).validTo}` : ""}`).join("; ")}.` : "No prior approvals on file.",
+      ]
+        .join("\n")
+        .slice(0, 2900)
+    : undefined;
+  useAssistantScreen(all.length ? { title: doctor ? "Patients · one doctor's clinic" : "Patients · everyone's clinic today", details, items: list.slice(0, 40).map((x) => ({ id: x._id, kind: "visit", label: `${x.patientName ?? ""} · ${new Date(x.start).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Dubai" })} · ${x.providerName ?? ""} (doctor id ${x.providerId})` })) } : null);
 
-  useEffect(() => {
-    api<{ encounters: OpenEnc[] }>("/api/encounters?status=open").then((r) => setAll(r.encounters)).catch(() => {});
-  }, []);
-
-  const load = useCallback(async () => {
-    if (!id) return null;
-    const r = await api<Enc>(`/api/emr/encounters/${id}`);
-    setData(r);
-    return r;
-  }, [id]);
+  // The first visit shown can arrive with the page (started on the server); later ones are fetched.
+  const firstVisit = useRef(initialVisit);
+  const load = useCallback(
+    async (first = false) => {
+      if (!id) return null;
+      let r: Enc | null = null;
+      if (first && firstVisit.current) {
+        const x = await Promise.resolve(firstVisit.current).catch(() => null);
+        firstVisit.current = undefined;
+        if (x?.encounter._id === id) r = x;
+      }
+      r ??= await api<Enc>(`/api/emr/encounters/${id}`);
+      setData(r);
+      return r;
+    },
+    [id],
+  );
 
   // ── SEAL checks: rules at once, fast model right after, reasoning model on a pause ──
   const runCheck = useCallback(
@@ -147,7 +175,7 @@ export function EmrScreen() {
     setError(null);
     atRiskSeen.current.clear();
     accepted.current = { rev: -1, rank: -1 };
-    void load().then((r) => {
+    void load(true).then((r) => {
       if (!r) return;
       const n = { complaint: r.encounter.complaint, findings: r.encounter.findings, plan: r.encounter.plan ?? "" };
       setNote(n);

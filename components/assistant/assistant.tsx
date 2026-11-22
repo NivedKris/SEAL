@@ -1,28 +1,34 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowUp, Check, FileText, Mic, MicOff, Pill, Radio, RotateCw, Send, Stethoscope, Undo2, Wrench, X, ArrowRight, MessageSquare } from "lucide-react";
+import { ArrowUp, Mic, MicOff, Radio, RotateCw, X, MessageSquare } from "lucide-react";
 import { Orb } from "./orb";
-import { assistant, useAssistant, type Mode, type Proposal } from "./store";
-import { startLive, stopLive, sendLiveText, interruptLive } from "./live";
+import { assistant, useAssistant, type Mode } from "./store";
 import { applyProposal } from "./apply";
-import { CodeChip } from "@/components/shared/code-chip";
+import { OfferCard, ProposalCard, Rich } from "./cards";
+import { contextNow, runActions, setNavigator } from "./screen";
+import { interruptLive, sendLiveText, setPanelMode, startVoice } from "./voice-control";
+import { Voice } from "./voice";
+import { Travel } from "./travel";
 import { cn } from "@/lib/utils";
 
 /**
- * SEAL's assistant: the orb on every screen (⌘K), and a glass panel for chat, voice (Gemini Live)
- * and the consultation scribe. Anything that would change a record arrives as a proposal card.
+ * SEAL's assistant has one way in: the S at the bottom centre (⌘J), a voice assistant (./voice).
+ * When someone wants more detail, the voice bar opens this glass panel ("Open in chat", or ⌘K):
+ * the same conversation as text, with typed chat and the consultation scribe. Anything that would
+ * change a record arrives as a proposal card; moving around SEAL happens at once.
  */
 const HIDDEN = ["/", "/select"];
-const FIELD: Record<string, string> = { complaint: "What the patient says", findings: "What you found", plan: "Plan" };
-
 export function Assistant() {
   const pathname = usePathname();
   const router = useRouter();
   const s = useAssistant();
 
+  useEffect(() => {
+    setNavigator({ push: (p) => router.push(p as never), back: () => router.back() });
+  }, [router]);
   useEffect(() => {
     const keep = pathname.startsWith("/emr") || pathname.startsWith("/billing/claims/");
     assistant.set((x) => ({ path: pathname, page: keep ? x.page : {} }));
@@ -38,47 +44,26 @@ export function Assistant() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
-  // Leaving a page ends a voice session that belonged to it.
+  // Leaving the visit ends the scribe (it belongs to that consultation). Talk keeps going: SEAL
+  // moves people between screens while they talk.
   useEffect(() => {
-    if (assistant.get().mode !== "chat") void setMode("chat");
+    if (assistant.get().mode === "scribe") void setPanelMode("chat");
   }, [pathname]);
 
   if (HIDDEN.includes(pathname)) return null;
-  const liveOn = s.live.status !== "off" && s.live.status !== "error";
 
   return (
     <>
-      {/* the orb */}
-      <AnimatePresence>
-        {!s.open && (
-          <motion.button
-            key="orb"
-            initial={{ opacity: 0, scale: 0.6 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.6 }}
-            whileHover={{ scale: 1.06 }}
-            onClick={() => assistant.set({ open: true })}
-            className="group fixed bottom-[calc(84px+env(safe-area-inset-bottom))] right-4 z-[60] md:bottom-7 md:right-7"
-            aria-label="Ask SEAL (Ctrl+K)"
-          >
-            <Orb size={62} status={liveOn ? s.live.status : "off"} level={s.live.level} />
-            <span className="pointer-events-none absolute right-[74px] top-1/2 hidden -translate-y-1/2 whitespace-nowrap rounded-full bg-white/80 px-3 py-1.5 text-[12px] font-light text-ink/70 opacity-0 shadow-sm ring-1 ring-ink/[0.07] backdrop-blur transition-opacity group-hover:opacity-100 md:block">
-              Ask SEAL · <kbd className="font-sans">⌘K</kbd>
-            </span>
-          </motion.button>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>{s.open && <Panel key="panel" navigate={(p) => router.push(p)} />}</AnimatePresence>
+      <AnimatePresence>{s.open && <Panel key="panel" navigate={(p) => router.push(p as never)} />}</AnimatePresence>
+      <Voice />
+      <Suspense>
+        <Travel />
+      </Suspense>
     </>
   );
 }
 
-async function setMode(mode: Mode) {
-  assistant.set({ mode });
-  if (mode === "chat") await stopLive();
-  else await startLive(mode);
-}
+const setMode = (mode: Mode) => (mode === "talk" ? startVoice() : setPanelMode(mode));
 
 // ── The panel ────────────────────────────────────────────────────────────────
 function Panel({ navigate }: { navigate: (path: string) => void }) {
@@ -106,12 +91,15 @@ function Panel({ navigate }: { navigate: (path: string) => void }) {
         .messages.filter((m) => m.role !== "note" && !m.live)
         .slice(-16)
         .map((m) => ({ role: m.role as "user" | "assistant", text: m.text }));
-      const r = await fetch("/api/assistant/chat", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ messages: history, context: { path: s.path, encounterId: s.page.encounterId, claimId: s.page.claimId, questionSetId: s.page.questionSetId } }) }).then((x) => x.json());
+      const r = await fetch("/api/assistant/chat", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ messages: history, context: contextNow() }) }).then((x) => x.json());
       if (r.error) throw new Error(r.error);
       if (r.reply) assistant.say({ role: "assistant", text: r.reply });
-      for (const p of r.proposals ?? []) assistant.propose(p.tool, p.args);
+      for (const p of r.proposals ?? []) assistant.propose(p.tool, p.args, p.id);
+      // moving around SEAL, "take me there?", or a change they typed yes to
+      if (r.actions?.length) await runActions(r.actions);
     } catch (e) {
-      assistant.say({ role: "note", text: `SEAL could not answer: ${(e as Error).message.slice(0, 140)}` });
+      const m = (e as Error).message;
+      assistant.say({ role: "note", text: /429|quota|rate limit|RESOURCE_EXHAUSTED|503|UNAVAILABLE|over capacity/i.test(m) ? "SEAL's AI is busy right now (its usage limit was reached). Please try again in a minute." : `SEAL could not answer: ${m.slice(0, 140)}` });
     } finally {
       assistant.set({ busy: false });
     }
@@ -139,7 +127,8 @@ function Panel({ navigate }: { navigate: (path: string) => void }) {
       exit={{ opacity: 0, x: 40, filter: "blur(8px)" }}
       transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
       className={cn(
-        "fixed inset-x-2 bottom-[calc(76px+env(safe-area-inset-bottom))] top-[72px] z-[60] flex flex-col overflow-hidden rounded-[28px] md:inset-x-auto md:bottom-6 md:right-6 md:top-[76px]",
+        // Phones: a sheet over the lower part of the screen (the page stays visible above it). Desktop: a side panel.
+        "fixed inset-x-2 bottom-[calc(76px+env(safe-area-inset-bottom))] h-[min(58dvh,520px)] z-[60] flex flex-col overflow-hidden rounded-[28px] md:inset-x-auto md:bottom-6 md:right-6 md:top-[76px] md:h-auto",
         "bg-[#f4f8f6]/[0.93] shadow-[0_0_0_1px_rgba(31,43,41,0.06),0_40px_100px_-30px_rgba(31,43,41,0.45)] backdrop-blur-2xl",
         wide ? "md:w-[560px]" : "md:w-[440px]",
       )}
@@ -182,9 +171,12 @@ function Panel({ navigate }: { navigate: (path: string) => void }) {
       {/* conversation */}
       <div ref={scroller} className="flex-1 space-y-3 overflow-y-auto px-5 py-4">
         {s.messages.length === 0 && s.proposals.length === 0 && (
-          <div className="pt-6 text-center">
-            <Orb size={84} status={s.live.status === "off" ? "off" : s.live.status} level={s.live.level} />
-            <p className="display mt-5 text-[26px] leading-tight">{s.mode === "scribe" ? "Talk with your patient." : s.mode === "talk" ? "I'm listening." : "How can I help?"}</p>
+          <div className="pt-3 text-center md:pt-6">
+            {/* Smaller on phones, where the panel is a short sheet. */}
+            <div className="mx-auto w-fit origin-top scale-[0.62] -mb-7 md:mb-0 md:scale-100">
+              <Orb size={84} status={s.live.status === "off" ? "off" : s.live.status} level={s.live.level} />
+            </div>
+            <p className="display mt-3 text-[22px] leading-tight md:mt-5 md:text-[26px]">{s.mode === "scribe" ? "Talk with your patient." : s.mode === "talk" ? "I'm listening." : "How can I help?"}</p>
             <p className="mx-auto mt-2 max-w-[300px] text-[13px] font-light text-ink/55">
               {s.mode === "scribe" ? "SEAL listens, writes the note, and tells you what the insurer will ask for while the patient is still here." : s.mode === "talk" ? "Ask anything, or dictate the note. Changes wait for your OK." : "I know this hospital's claims, patients and insurer rules. Changes always wait for your OK."}
             </p>
@@ -210,6 +202,7 @@ function Panel({ navigate }: { navigate: (path: string) => void }) {
         {s.proposals.map((p) => (
           <ProposalCard key={p.id} p={p} navigate={navigate} />
         ))}
+        {s.offer?.status === "open" && <OfferCard o={s.offer} />}
       </div>
 
       {pending.length > 1 && (
@@ -328,85 +321,5 @@ function Bubble({ role, text, live }: { role: "user" | "assistant" | "note"; tex
         {live && <span className="caret" />}
       </div>
     </motion.div>
-  );
-}
-
-// ── Proposal cards: SEAL's suggested changes, waiting for a person ───────────
-function ProposalCard({ p, navigate }: { p: Proposal; navigate: (path: string) => void }) {
-  const a = p.args as Record<string, string>;
-  const view = (() => {
-    switch (p.tool) {
-      case "update_note":
-        return { icon: FileText, title: `Write in “${FIELD[a.field] ?? "the note"}”`, body: <p className="mt-2 rounded-xl bg-white/70 px-3 py-2 text-[13.5px] font-light italic leading-relaxed text-ink/80">“{a.text}”</p> };
-      case "add_diagnosis":
-        return { icon: Stethoscope, title: "Add a diagnosis", body: <div className="mt-2 flex flex-wrap items-center gap-2"><CodeChip code={a.icd10} showLabel />{a.reason && <span className="text-[12px] font-light text-ink/55">{a.reason}</span>}</div> };
-      case "add_order":
-        return { icon: Pill, title: "Order", body: <div className="mt-2 flex flex-wrap items-center gap-2"><CodeChip code={a.code} showLabel />{a.reason && <span className="text-[12px] font-light text-ink/55">{a.reason}</span>}</div> };
-      case "remove_order":
-        return { icon: Undo2, title: "Remove the order", body: <div className="mt-2"><CodeChip code={a.code} showLabel /></div> };
-      case "send_claim":
-        return { icon: Send, title: "Send to the insurer", body: <p className="mt-2 text-[13.5px] font-light text-ink/80"><span className="font-mono">{a.claimId}</span>{a.overrideReason ? <span className="mt-1 block text-[12px] text-[#a86f0e]">Held claim, sent with your reason: “{a.overrideReason}”</span> : null}</p> };
-      case "send_ready_claims":
-        return { icon: Send, title: "Send every ready claim", body: <p className="mt-2 text-[13.5px] font-light text-ink/80">{a.sent ? `${a.sent} claims sent to the insurers` : "All claims that passed SEAL's check go to their insurers."}</p> };
-      case "answer_question":
-        return { icon: MessageSquare, title: "Answer SEAL's question", body: <p className="mt-2 rounded-xl bg-white/70 px-3 py-2 text-[13.5px] font-light leading-relaxed text-ink/80"><span className="text-ink/55">{a.label ?? a.field}:</span> <span className="font-normal text-ink">{a.value}</span></p> };
-      case "apply_claim_fix":
-        return { icon: Wrench, title: "Fix the claim", body: <p className="mt-2 text-[13.5px] font-light text-ink/80">{a.summary ?? "Apply SEAL's recommended fix"}</p> };
-      case "recheck_claim":
-        return { icon: RotateCw, title: "Check the claim again", body: null };
-      case "open_page":
-        return { icon: ArrowRight, title: "Go to", body: <p className="mt-1 font-mono text-[12px] text-ink/60">{a.path}</p> };
-      default:
-        return { icon: Wrench, title: p.tool, body: null };
-    }
-  })();
-  const Icon = view.icon;
-  return (
-    <motion.div initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} className={cn("rounded-[22px] p-4 ring-1 transition-colors", p.status === "done" ? "bg-seal-mint/30 ring-seal-deep/20" : p.status === "rejected" ? "bg-white/40 opacity-60 ring-ink/[0.06]" : p.status === "failed" ? "bg-[#c2473c]/5 ring-[#c2473c]/20" : "bg-white/75 ring-ink/[0.08] shadow-[0_12px_30px_-18px_rgba(31,43,41,0.35)]")}>
-      <div className="flex items-center gap-2">
-        <span className="flex size-7 items-center justify-center rounded-full bg-seal-mint/60 text-[#237a4b]">
-          <Icon className="size-3.5" />
-        </span>
-        <span className="text-[13.5px] font-normal">{view.title}</span>
-        <span className="ml-auto text-[10px] font-light uppercase tracking-[0.18em] text-ink/40">{p.status === "pending" ? "Suggested" : p.status === "working" ? "Applying" : p.status === "done" ? "Done" : p.status === "rejected" ? "Rejected" : "Couldn't"}</span>
-      </div>
-      {view.body}
-      {p.note && <p className="mt-2 text-[12px] text-[#b23b31]">{p.note}</p>}
-      {(p.status === "pending" || p.status === "failed") && (
-        <div className="mt-3 flex gap-2">
-          <button onClick={() => void applyProposal(p, navigate)} className="flex items-center gap-1.5 rounded-full bg-ink px-4 py-2 text-[12.5px] text-white">
-            <Check className="size-3.5" /> Accept
-          </button>
-          <button onClick={() => assistant.updateProposal(p.id, { status: "rejected" })} className="rounded-full px-4 py-2 text-[12.5px] font-light text-ink/60 ring-1 ring-ink/10 hover:bg-white">
-            Reject
-          </button>
-        </div>
-      )}
-      {p.status === "done" && (
-        <p className="mt-2 flex items-center gap-1.5 text-[12px] font-light text-[#237a4b]">
-          <Check className="size-3.5" /> {p.tool === "send_claim" || p.tool === "send_ready_claims" ? "Sent — the insurer's answer will arrive in Claims" : p.tool === "answer_question" ? "Saved as a draft answer — the doctor signs it" : p.tool === "update_note" ? "Written into the note" : p.tool.startsWith("add") ? "Added — SEAL is checking it" : "Done"}
-        </p>
-      )}
-    </motion.div>
-  );
-}
-
-/** Assistant text: paragraphs, "- " bullet lines and **bold** numbers. */
-function Rich({ text }: { text: string }) {
-  const bold = (t: string) => t.split(/(\*\*[^*]+\*\*)/g).map((x, i) => (x.startsWith("**") && x.endsWith("**") ? <b key={i} className="font-semibold text-ink">{x.slice(2, -2)}</b> : <span key={i}>{x}</span>));
-  const lines = text.split(/\n+/).filter((l) => l.trim());
-  return (
-    <div className="space-y-1.5">
-      {lines.map((l, i) =>
-        /^\s*[-•*]\s+/.test(l) ? (
-          <div key={i} className="flex gap-2">
-            <span className="mt-[9px] size-1 shrink-0 rounded-full bg-seal-deep" />
-            <span>{bold(l.replace(/^\s*[-•*]\s+/, ""))}</span>
-          </div>
-        ) : (
-          <p key={i}>{bold(l)}</p>
-        ),
-      )}
-    </div>
   );
 }

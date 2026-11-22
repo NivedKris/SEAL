@@ -13,6 +13,7 @@ import { createResubmission, submitClaim, versionDiagnoses } from "@/lib/claims/
 import { cptLabel, icdLabel } from "@/lib/codes";
 import { norm, quoted } from "@/lib/check/quotes";
 import { dubaiIso } from "@/lib/util/time";
+import { workingDraft } from "./plan";
 
 type Actor = EventDoc["actor"];
 const AGENT = { kind: "agent" as const, id: "recovery" };
@@ -138,6 +139,16 @@ export async function draftRecovery(d: Db, claimId: string): Promise<RecoveryDra
     writtenAt: dubaiIso(),
   };
   if (flags.size) await annotateCall(d, r.call._id, { guardrailFlags: [...flags] });
+  // Keep what a person already fixed (approval attached, quantity, diagnoses, written-off lines):
+  // their choices win over the drafter's, and their earlier working draft is replaced by this one.
+  const prev = await workingDraft(d, claimId);
+  if (prev) {
+    const pd = (prev.diff ?? {}) as { lineEdits?: Record<string, object>; diagnoses?: unknown; activityIds?: string[]; changes?: string[] };
+    const nd = draft.diff as { lineEdits: Record<string, object>; activityIds: string[] };
+    draft.diff = { ...nd, lineEdits: { ...nd.lineEdits, ...Object.fromEntries(Object.entries(pd.lineEdits ?? {}).map(([k, v]) => [k, { ...(nd.lineEdits[k] ?? {}), ...v }])) }, ...(pd.diagnoses ? { diagnoses: pd.diagnoses } : {}), changes: pd.changes ?? [] };
+    if (pd.changes?.length) draft.letter = `${draft.letter}\n\nCorrections made:\n${pd.changes.map((c) => `- ${c}`).join("\n")}`;
+    await d.collection(C.recoveryDrafts).updateOne({ _id: prev._id as never }, { $set: { supersededBy: draft._id } });
+  }
   await d.collection(C.recoveryDrafts).insertOne(draft as never);
   await d.collection(C.denials).updateMany({ _id: { $in: denials.map((x) => x._id) as never[] } }, { $set: { status: "drafted", draftId: draft._id } });
   await emit("draft.ready", { claimId, draftId: draft._id, type: draft.type, lines: denials.length }, AGENT);

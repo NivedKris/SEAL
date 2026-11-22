@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+import { useData } from "@/lib/client/data";
 import { Check, ExternalLink, FlaskConical, Loader2, Play, ShieldCheck, X } from "lucide-react";
 import { describe } from "@/lib/rules/describe";
 import type { Rule } from "@/lib/rules/dsl";
@@ -12,15 +13,14 @@ type TestResult = { claimsChecked: number; refusedLines: number; fires: number; 
 type Step = { step: string; detail: Record<string, unknown> };
 
 export function RulesStudio() {
-  const [data, setData] = useState<{ rules: RuleRow[]; proposals: Proposal[]; lastCycle: { at: string } | null } | null>(null);
+  const rulesQ = useData<{ rules: RuleRow[]; proposals: Proposal[]; lastCycle: { at: string } | null }>("/api/rules");
+  const data = rulesQ.data ?? null;
   const [tests, setTests] = useState<Record<string, TestResult | "running">>({});
   const [steps, setSteps] = useState<Step[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [filter, setFilter] = useState("");
-  const load = useCallback(async () => setData(await fetch("/api/rules").then((r) => r.json())), []);
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const reloadRules = rulesQ.reload;
+  const load = useCallback(() => reloadRules().catch(() => {}), [reloadRules]);
 
   const test = async (id: string, proposal = false) => {
     setTests((t) => ({ ...t, [id]: "running" }));

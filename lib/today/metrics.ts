@@ -5,6 +5,8 @@ import { clinicMetrics } from "@/lib/clinic/metrics";
 import { dubaiIso, DAY } from "@/lib/util/time";
 import { hospitalProfile } from "@/lib/hospital/profile";
 import { insurerName } from "@/lib/hospital/names";
+import { memo } from "@/lib/perf/memo";
+import { keepClinicToday } from "@/lib/admin/clinics";
 
 /**
  * The Today dashboard in one call: the day's claims as a thread of stages, the money, every
@@ -12,31 +14,44 @@ import { insurerName } from "@/lib/hospital/names";
  */
 const LIVE = /-L\d+$/;
 
-// Per-doctor first-time acceptance from the history is costly (20k claims): cache for 10 minutes.
-const doctorRateCache = new Map<string, { at: number; rates: Map<string, { claims: number; rate: number }> }>();
-async function firstTimeByDoctor(d: Db) {
-  const doctorRates = doctorRateCache.get(d.databaseName);
-  if (doctorRates && Date.now() - doctorRates.at < 10 * 60_000) return doctorRates.rates;
-  const rows = await d
-    .collection(C.outcomes)
-    .aggregate([
-      { $project: { firstPassRefused: 1 } },
-      { $lookup: { from: C.claims, localField: "_id", foreignField: "_id", as: "c", pipeline: [{ $project: { providerId: 1 } }] } },
-      { $unwind: "$c" },
-      { $group: { _id: "$c.providerId", n: { $sum: 1 }, refused: { $sum: { $cond: ["$firstPassRefused", 1, 0] } } } },
-    ])
-    .toArray();
-  const rates = new Map(rows.map((r) => [String(r._id), { claims: r.n as number, rate: 1 - (r.refused as number) / (r.n as number) }]));
-  doctorRateCache.set(d.databaseName, { at: Date.now(), rates });
-  return rates;
+// Per-doctor first-time acceptance over the whole history (a 20k-claim join): stored, refreshed every 10 minutes.
+function firstTimeByDoctor(d: Db) {
+  return memo(d, "doctor-first-time", 10 * 60_000, async () => {
+    const rows = await d
+      .collection(C.outcomes)
+      .aggregate([
+        { $project: { firstPassRefused: 1 } },
+        { $lookup: { from: C.claims, localField: "_id", foreignField: "_id", as: "c", pipeline: [{ $project: { providerId: 1 } }] } },
+        { $unwind: "$c" },
+        { $group: { _id: "$c.providerId", n: { $sum: 1 }, refused: { $sum: { $cond: ["$firstPassRefused", 1, 0] } } } },
+      ])
+      .toArray();
+    return rows.map((r) => [String(r._id), { claims: r.n as number, rate: 1 - (r.refused as number) / (r.n as number) }] as const);
+  }).then((rows) => new Map(rows));
+}
+
+// Each insurer's first-time acceptance over the last 90 days: stored, refreshed every 10 minutes.
+function payerRates(d: Db) {
+  return memo(d, "payer-90d", 10 * 60_000, () => {
+    const now = Date.now();
+    const since90 = new Date(now - 90 * DAY).toISOString();
+      return d
+      .collection(C.remittances)
+      .aggregate([
+        { $match: { claimVersion: 1, readyAt: { $gte: since90, $lte: new Date(now).toISOString() } } },
+        { $project: { payerId: 1, refused: { $gt: [{ $size: { $filter: { input: "$lines", cond: { $ifNull: ["$$this.denialCode", false] } } } }, 0] } } },
+        { $group: { _id: "$payerId", n: { $sum: 1 }, refused: { $sum: { $cond: ["$refused", 1, 0] } } } },
+      ])
+      .toArray() as Promise<{ _id: string; n: number; refused: number }[]>;
+  });
 }
 
 export async function todayMetrics(d: Db) {
+  await keepClinicToday(d);
   const now = Date.now();
   const todayStart = `${dubaiIso(now).slice(0, 10)}T00:00:00+04:00`;
-  const since90 = new Date(now - 90 * DAY).toISOString();
 
-  const [encToday, openQs, live, providers, payers, denialsDue, rates, money, payerRows, learnReady] = await Promise.all([
+  const [encToday, openQs, live, providers, payers, denialsDue, rates, money, payerRows, learnReady, hp] = await Promise.all([
     d.collection(C.encounters).find({ start: { $gte: todayStart }, evalSet: false }, { projection: { providerId: 1, status: 1 } }).toArray(),
     d.collection(C.questionSets).find({ status: "open" }, { projection: { providerId: 1, claimId: 1, questions: 1 } }).toArray(),
     d.collection(C.claims).find({ claimNo: LIVE }, { projection: { status: 1, net: 1, payerId: 1, providerId: 1, patientId: 1, claimNo: 1, riskScore: 1 } }).toArray(),
@@ -45,14 +60,7 @@ export async function todayMetrics(d: Db) {
     d.collection(C.denials).find({ status: { $in: ["queued", "drafted"] }, deadline: { $gte: new Date(now).toISOString() } }, { projection: { claimId: 1, amount: 1, deadline: 1, denialCode: 1 } }).sort({ deadline: 1 }).limit(20).toArray(),
     firstTimeByDoctor(d),
     clinicMetrics(d),
-    d
-      .collection(C.remittances)
-      .aggregate([
-        { $match: { claimVersion: 1, readyAt: { $gte: since90, $lte: new Date(now).toISOString() } } },
-        { $project: { payerId: 1, refused: { $gt: [{ $size: { $filter: { input: "$lines", cond: { $ifNull: ["$$this.denialCode", false] } } } }, 0] } } },
-        { $group: { _id: "$payerId", n: { $sum: 1 }, refused: { $sum: { $cond: ["$refused", 1, 0] } } } },
-      ])
-      .toArray(),
+    payerRates(d),
     // Same measure as Insights: finished claims since SEAL last learned.
     d
       .collection(C.learningCycles)
@@ -64,13 +72,14 @@ export async function todayMetrics(d: Db) {
         const since = (c[0]?.at as string | undefined) ?? null;
         return { ready: await d.collection(C.outcomes).countDocuments(since ? { writtenAt: { $gt: since } } : {}), since };
       }),
+    // A hospital with its own history (e.g. Apollo): its real numbers replace the simulated ones.
+    hospitalProfile(d),
   ]);
 
-  // A hospital with its own history (e.g. Apollo): its real numbers replace the simulated ones.
-  const hp = await hospitalProfile(d);
   const liveIds = live.map((c) => String(c._id));
-  const paidRems = await d.collection(C.remittances).find({ claimId: { $in: liveIds } }, { projection: { claimId: 1, lines: 1 } }).toArray();
-  const paidAmount = paidRems.reduce((s, r) => s + (r.lines as { paymentAmount: number }[]).reduce((t, l) => t + l.paymentAmount, 0), 0);
+  const paidAmount = liveIds.length
+    ? (((await d.collection(C.remittances).aggregate([{ $match: { claimId: { $in: liveIds } } }, { $unwind: "$lines" }, { $group: { _id: null, paid: { $sum: "$lines.paymentAmount" } } }]).toArray())[0]?.paid as number | undefined) ?? 0)
+    : 0;
   const count = (...st: string[]) => live.filter((c) => st.includes(c.status as string)).length;
   const sum = (...st: string[]) => live.filter((c) => st.includes(c.status as string)).reduce((s, c) => s + (c.net as number), 0);
 

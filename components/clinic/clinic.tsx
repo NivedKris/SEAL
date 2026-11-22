@@ -1,9 +1,14 @@
 "use client";
 
 import { SealLoader } from "@/components/brand/seal-loader";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useData } from "@/lib/client/data";
 import CountUp from "@/components/CountUp";
-import { Chart, VIZ, axisBase } from "@/components/health/chart";
+import dynamic from "next/dynamic";
+import { VIZ, axisBase } from "@/components/health/chart-theme";
+
+// The chart library loads after the numbers are on screen.
+const Chart = dynamic(() => import("@/components/health/chart").then((m) => m.Chart), { ssr: false, loading: () => <div className="h-[240px]" /> });
 
 type M = {
   firstPass: { rate: number | null; claims: number; byMonth: { month: string; n: number; rate: number }[] };
@@ -17,11 +22,8 @@ type M = {
 const K = (n: number) => (n >= 1e6 ? `${(n / 1e6).toFixed(2)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(0)}k` : n.toFixed(0));
 const MONTH = (m: string) => new Date(`${m}-01T00:00:00Z`).toLocaleString("en-GB", { month: "short", year: "2-digit" });
 
-export function Clinic() {
-  const [m, setM] = useState<M | null>(null);
-  useEffect(() => {
-    fetch("/api/clinic").then((r) => r.json()).then(setM);
-  }, []);
+export function Clinic({ initial }: { initial?: Promise<M | null> }) {
+  const m = useData<M>("/api/clinic", { initial }).data ?? null;
   const trend = useMemo(
     () =>
       m && {

@@ -3,8 +3,12 @@ import { ZodError } from "zod";
 
 /** Run a handler and turn thrown errors into JSON (400 for invalid input, 404 for missing, else 500). */
 export async function handle<T>(fn: () => Promise<T>): Promise<NextResponse> {
+  const t0 = performance.now();
   try {
-    return NextResponse.json(await fn());
+    const res = NextResponse.json(await fn());
+    // How long the server spent, visible in the browser's network panel and in scripts/perf.sh.
+    res.headers.set("Server-Timing", `app;dur=${(performance.now() - t0).toFixed(0)}`);
+    return res;
   } catch (e) {
     const msg = e instanceof ZodError ? e.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ") : (e as Error).message;
     const status = e instanceof ZodError || e instanceof BadRequest ? 400 : /not found/i.test(msg) ? 404 : 500;

@@ -1,7 +1,8 @@
 "use client";
 
 import { SealLoader } from "@/components/brand/seal-loader";
-import { useEffect, useState } from "react";
+
+import { useData } from "@/lib/client/data";
 import { AlertTriangle, Brain, Clock, Lock, MessageCircleQuestion, ShieldCheck, Sparkles, TrendingUp } from "lucide-react";
 import CountUp from "@/components/CountUp";
 import SpotlightCard from "@/components/SpotlightCard";
@@ -32,15 +33,9 @@ type H = {
 };
 
 /** Insights for the people who use SEAL every day: what it is doing for the hospital, in plain words. */
-export function AiHealth() {
-  const [h, setH] = useState<H | null>(null);
-  const reload = () => fetch("/api/ai-health").then((r) => r.json()).then(setH).catch(() => {});
-  useEffect(() => {
-    const load = reload;
-    void load();
-    const t = setInterval(load, 20_000);
-    return () => clearInterval(t);
-  }, []);
+export function AiHealth({ initial }: { initial?: Promise<H | null> }) {
+  const { data, reload } = useData<H>("/api/ai-health", { initial, refreshMs: 20_000 });
+  const h = data ?? null;
   if (!h) return <SealLoader className="min-h-[70vh]" size={44} />;
 
   const q = h.quality.eval;

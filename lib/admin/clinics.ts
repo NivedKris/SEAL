@@ -17,6 +17,26 @@ function seeded(seed: number) {
   return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 2 ** 32);
 }
 
+/**
+ * Keep the clinic on today. The clinic is created when the demo is set up; on a later day, the
+ * visits still open (not yet signed) move to today at the same times, so Today, Patients and the
+ * doctors' cards always show a live clinic. Runs once a day per hospital (cheap afterwards).
+ */
+const rolled = new Map<string, string>();
+export async function keepClinicToday(d: Db) {
+  const today = dubaiIso().slice(0, 10);
+  if (rolled.get(d.databaseName) === today) return;
+  const stale = { _id: { $regex: `^${CLINIC_PREFIX}-` }, status: "open", start: { $lt: today } } as never;
+  const ids = (await d.collection(C.encounters).find(stale, { projection: { _id: 1 } }).toArray()).map((e) => String(e._id));
+  if (ids.length) {
+    // same time of day, today's date ("2026-11-21T10:05:00+04:00" → today + "T10:05:00+04:00")
+    const move = (field: string) => [{ $set: { [field]: { $concat: [today, { $substrCP: [`$${field}`, 10, 20] }] } } }];
+    await d.collection(C.encounters).updateMany({ _id: { $in: ids as never[] } }, move("start"));
+    await d.collection(C.orders).updateMany({ encounterId: { $in: ids }, orderedAt: { $lt: today } }, move("orderedAt"));
+  }
+  rolled.set(d.databaseName, today);
+}
+
 export async function clearClinics(d: Db) {
   const ids = (await d.collection(C.encounters).find({ _id: { $regex: `^${CLINIC_PREFIX}-` } as never }, { projection: { _id: 1 } }).toArray()).map((e) => String(e._id));
   if (!ids.length) return 0;

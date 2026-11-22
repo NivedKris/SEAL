@@ -72,7 +72,7 @@ export function Install() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 16 }}
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          className="fixed left-4 z-40 bottom-[calc(84px+env(safe-area-inset-bottom))] md:bottom-6 max-w-[calc(100vw-6.5rem)] md:max-w-md"
+          className="fixed left-4 z-40 bottom-[calc(148px+env(safe-area-inset-bottom))] md:bottom-6 max-w-[calc(100vw-6.5rem)] md:max-w-md"
         >
           <div className="card flex items-center gap-3 pl-3 pr-2 py-2 shadow-lg">
             <img src="/icons/icon-192.png" alt="" className="h-9 w-9 rounded-xl" />

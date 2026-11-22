@@ -11,7 +11,8 @@ const g = globalThis as unknown as { _sealMongo?: Promise<MongoClient> };
 
 export function mongoClient(): Promise<MongoClient> {
   g._sealMongo ??= new MongoClient(env.MONGODB_URI, {
-    maxPoolSize: 10,
+    // Today fires ~14 small queries at once; a pool of 20 keeps them from queuing behind each other.
+    maxPoolSize: 20,
     // Keep a few connections open so the first claim check after a cold start doesn't pay for TLS handshakes.
     minPoolSize: 4,
     serverSelectionTimeoutMS: 8000,

@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useData } from "@/lib/client/data";
+import { useAssistantScreen } from "@/components/assistant/store";
 import { motion } from "motion/react";
 import { ArrowUpRight, CircleHelp, FileWarning, Gavel } from "lucide-react";
 import { SealLoader } from "@/components/brand/seal-loader";
@@ -36,28 +38,17 @@ const aed = (n: number) => `AED ${Math.round(n).toLocaleString("en")}`;
 const pct = (p: number | null | undefined) => (p == null ? "—" : `${Math.round(p * 100)}%`);
 const initials = (n: string) => n.replace(/^Dr\.\s*/, "").replace(/,.*$/, "").split(/\s+/).map((w) => w[0]).slice(0, 2).join("");
 
-export function Today() {
-  const [m, setM] = useState<TodayMetrics | null>(null);
-  const [err, setErr] = useState<string | null>(null);
+export function Today({ initial }: { initial?: Promise<TodayMetrics | null> }) {
+  const { data: m, error } = useData<TodayMetrics>("/api/today", { initial, refreshMs: 20_000 });
+  const err = m ? null : error ? "SEAL could not load today's numbers." : null;
   const [view, setView] = useState<View>("everyone");
+  useAssistantScreen(m ? { title: "Today", items: [...m.needsYou.map((x) => ({ id: x.href, kind: x.kind, label: `${x.title}: ${x.detail}${x.amount ? ` · AED ${Math.round(x.amount)}` : ""} (opens ${x.href})` })), ...m.doctors.slice(0, 14).map((x) => ({ id: x.id, kind: "doctor", label: `${x.name} · ${x.specialty} · ${x.patientsToday} patients today` }))] } : null);
 
   useEffect(() => {
     try {
       const v = localStorage.getItem("seal-view") as View | null;
       if (v && VIEWS.some((x) => x.key === v)) setView(v);
     } catch {}
-    let stop = false;
-    const load = () =>
-      fetch("/api/today")
-        .then((r) => r.json())
-        .then((r) => (r.error ? setErr(r.error) : !stop && setM(r)))
-        .catch(() => setErr("SEAL could not load today's numbers."));
-    void load();
-    const t = setInterval(load, 20_000);
-    return () => {
-      stop = true;
-      clearInterval(t);
-    };
   }, []);
   const pick = (v: View) => {
     setView(v);

@@ -6,17 +6,10 @@ import { BarChart, LineChart } from "echarts/charts";
 import { GridComponent, LegendComponent, MarkLineComponent, TooltipComponent } from "echarts/components";
 import { SVGRenderer } from "echarts/renderers";
 
+import { VIZ, axisBase } from "./chart-theme";
+export { VIZ, axisBase };
+
 echarts.use([BarChart, LineChart, GridComponent, LegendComponent, MarkLineComponent, TooltipComponent, SVGRenderer]);
-
-/** Two validated categorical slots (dataviz reference palette, light mode) + recessive ink. */
-export const VIZ = { s1: "#2a78d6", s2: "#eb6834", ink: "#1d1d1f", muted: "#6e6e73", grid: "#e8e8ed", ref: "#a1a1a6" };
-
-export const axisBase = {
-  axisLine: { lineStyle: { color: VIZ.grid } },
-  axisTick: { show: false },
-  axisLabel: { color: VIZ.muted, fontSize: 11 },
-  splitLine: { lineStyle: { color: VIZ.grid } },
-};
 
 export function Chart({ option, height = 240 }: { option: echarts.EChartsCoreOption; height?: number }) {
   const ref = useRef<HTMLDivElement>(null);

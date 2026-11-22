@@ -12,7 +12,9 @@ import ShinyText from "@/components/ShinyText";
 import { FixPanel } from "./fix-panel";
 import { TraceTerminal } from "./trace-terminal";
 import { CodeChip } from "@/components/shared/code-chip";
-import { setAssistantPage } from "@/components/assistant/store";
+import { PAGE_EVENT, setAssistantPage, useAssistantScreen, type PageEvent } from "@/components/assistant/store";
+import { useData } from "@/lib/client/data";
+import { WinBack, type Plan } from "./win-back";
 import { cn } from "@/lib/utils";
 
 // ── Shapes coming from /api/claims/[id] and the check stream ─────────────────
@@ -118,6 +120,18 @@ export function ClaimDetail({ id }: { id: string }) {
     if (detail) setAssistantPage({ claimId: detail.claim._id, kind: "claim", label: `Claim ${detail.claim.claimNo.split("-").at(-1)} · ${detail.patient.name} · ${detail.payer.name}` });
   }, [detail]);
 
+  // The assistant changed something on this claim (a fix, a resubmission): reload, and follow the re-check.
+  useEffect(() => {
+    const on = (ev: Event) => {
+      if ((ev as CustomEvent<PageEvent>).detail.kind !== "refresh") return;
+      void load().then((fresh) => {
+        if (fresh && ["hold", "ready", "checking"].includes(fresh.claim.status)) setStreamKey((k) => k + 1);
+      });
+    };
+    window.addEventListener(PAGE_EVENT, on);
+    return () => window.removeEventListener(PAGE_EVENT, on);
+  }, [load]);
+
   // Live check stream (SSE). Opens while a check is pending or running, and after "Re-run check".
   const state = detail?.claim.liveCheckState;
   const checkable = ["draft", "ready", "checking", "hold"].includes(detail?.claim.status ?? "");
@@ -174,6 +188,32 @@ export function ClaimDetail({ id }: { id: string }) {
     return () => clearInterval(t);
   }, [status, id, load]);
 
+  // Tell the assistant everything on this page: the claim, why it is held and its fixes, or (refused)
+  // what the insurer said, SEAL's fix for each line and the resubmission being prepared.
+  const refusedNow = status === "refused" || status === "partially_paid";
+  const fixesQ = useData<{ fixes: { problem: string; recommendation: string; findingId: string; action: { type: string } }[] }>(detail && (status === "hold" || status === "ready") ? `/api/claims/${id}/fixes` : null);
+  const planQ = useData<Plan>(detail && refusedNow ? `/api/claims/${id}/recovery` : null, { freshMs: 0 });
+  useAssistantScreen(
+    detail
+      ? {
+          title: `Claim ${detail.claim.claimNo} · ${detail.patient.name} · ${detail.payer.name}`,
+          details: [
+            `Claim ${detail.claim.claimNo} (id ${detail.claim._id}), status ${detail.claim.status}, value AED ${detail.claim.net}, refusal risk ${detail.claim.riskScore == null ? "not checked" : `${Math.round(detail.claim.riskScore * 100)}%`}. Doctor ${detail.provider.name}; insurer ${detail.payer.name}.`,
+            `Lines: ${detail.claim.versions.at(-1)!.lines.map((l) => `${l.code} ${l.label ?? ""} x${l.quantity}`).join("; ")}.`,
+            fixesQ.data?.fixes.length ? `Held. SEAL's "Fix it here" fixes: ${fixesQ.data.fixes.map((f) => `[findingId ${f.findingId}] ${f.problem} → ${f.recommendation} (${f.action.type})`).join("; ")}.` : "",
+            planQ.data?.refused.length
+              ? `Refused by the insurer. "Win it back" (AED ${planQ.data.atStake} at stake, ${planQ.data.resubmissionsLeft} resubmissions left, deadline ${planQ.data.deadline?.slice(0, 10)}): ${planQ.data.refused
+                  .map((r) => `[line ${r.activityId}] ${r.code} ${r.service}: ${r.denialCode} ${r.meaning}${r.insurerComment ? ` ("${r.insurerComment}")` : ""}${r.sealReads ? `; SEAL reads: ${r.sealReads.rootCause}` : ""}; recommended: ${r.recommendation}; fixes: ${r.fixes.map((f) => f.type + ("quantity" in f ? ` ${f.quantity}` : "") + ("authNo" in f ? ` ${f.authNo}` : "") + ("suggestions" in f && f.suggestions.length ? ` (suggested ${f.suggestions.map((x) => x.code).join(", ")})` : "")).join(", ")}${r.done.length ? `; done: ${r.done.join(", ")}` : ""}${r.status === "written_off" ? " (written off)" : ""}`)
+                  .join(". ")}. Resubmission: ${planQ.data.draft ? `${planQ.data.draft.type}, ${planQ.data.draft.byAI ? "letter drafted by SEAL" : "no SEAL letter yet"}${planQ.data.draft.changes.length ? `, corrections: ${planQ.data.draft.changes.join("; ")}` : ""}` : "not started"}.`
+              : "",
+          ]
+            .filter(Boolean)
+            .join("\n")
+            .slice(0, 2900),
+        }
+      : null,
+  );
+
   if (notFound) return <main className="mx-auto max-w-[1400px] px-4 md:px-6 py-24 text-center text-muted-foreground">{notFound}</main>;
   if (!detail) return <SealLoader className="min-h-[70vh]" size={44} label="Opening the claim" />;
 
@@ -182,6 +222,8 @@ export function ClaimDetail({ id }: { id: string }) {
   const running = ["rules", "judge", "critic"].includes(c.liveCheckState) || (check.run > 0 && !check.routed && !check.error && c.status === "checking");
   const lineRisk = check.routed?.lineRisk ?? Object.fromEntries((check.judge?.lines ?? []).map((l) => [l.activityId, l.probability]));
   const claimRisk = check.routed?.riskScore ?? (c.status !== "checking" ? c.riskScore : null);
+  // A claim from the imported history was never checked by SEAL: no empty pipeline or trace for it.
+  const checked = !!c.check || running || check.run > 0 || ["draft", "checking", "hold", "ready"].includes(c.status);
 
   return (
     <main className="mx-auto max-w-[1400px] px-4 md:px-6 pb-24 pt-8">
@@ -212,19 +254,28 @@ export function ClaimDetail({ id }: { id: string }) {
               <div className="text-[14px] text-ink/50">Claim value</div>
               <div className="dot whitespace-nowrap text-[30px] text-seal-deep sm:text-[42px]">{aed(c.net)}</div>
             </div>
-            <div className="rounded-full bg-white p-1.5">
-              <RiskRing p={running && !check.routed ? null : claimRisk} size={150} />
-            </div>
+            {checked ? (
+              <div className="rounded-full bg-white p-1.5">
+                <RiskRing p={running && !check.routed ? null : claimRisk} size={150} />
+              </div>
+            ) : (
+              // from the imported history (never checked by SEAL): what the insurer refused instead of a risk score
+              <div className="flex size-[150px] flex-col items-center justify-center rounded-full bg-white/80 text-center ring-1 ring-[#f0b45a]/40">
+                <div className="text-[12px] uppercase tracking-[0.16em] text-ink/45">{["refused", "partially_paid"].includes(c.status) ? "Refused" : "Status"}</div>
+                <div className="dot mt-1 text-[22px] text-[#b26a00]">{["refused", "partially_paid"].includes(c.status) ? aed(detail.denials.filter((x) => x.status === "queued" || x.status === "drafted").reduce((t, x) => t + x.amount, 0)) : c.status}</div>
+              </div>
+            )}
           </div>
         </div>
-        <Pipeline check={check} running={running} />
+        {checked && <Pipeline check={check} running={running} />}
       </section>
 
-      <TraceTerminal detail={detail} check={check} running={running} events={events} />
+      {checked && <TraceTerminal detail={detail} check={check} running={running} events={events} />}
 
       <div className="mt-8 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 lg:gap-8">
         <div className="min-w-0 space-y-8">
           {["hold", "ready"].includes(c.status) && check.routed && <FixPanel claimId={c._id} run={check.run} onApplied={() => setStreamKey((k) => k + 1)} />}
+          {["refused", "partially_paid"].includes(c.status) && <WinBack claimId={c._id} payer={detail.payer.name} onSent={() => void load()} />}
           <Lines lines={v.lines} rules={(check.routed?.lines as RuleLine[] | undefined) ?? check.rules?.lines} risk={lineRisk} remittance={detail.remittances.at(-1)} />
           <Findings detail={detail} check={check} />
           <DoctorQuestions detail={detail} />

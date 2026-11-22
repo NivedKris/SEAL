@@ -329,3 +329,18 @@ html[lang="ar"] body,
 @keyframes field-glow { 0% { box-shadow: 0 0 0 0 rgba(127,230,176,0); } 30% { box-shadow: 0 0 0 6px rgba(127,230,176,0.45), 0 18px 50px -16px rgba(47,158,98,0.45); } 100% { box-shadow: 0 0 0 2px rgba(127,230,176,0.35), 0 18px 50px -20px rgba(47,158,98,0.25); } }
 .field-glow { animation: field-glow 1.6s ease-out both; }
 @media (prefers-reduced-motion: reduce) { .orb-breathe, .orb-spin, .orb-ripple { animation: none; } }
+
+/* SEAL's voice bar: a slowly turning mint and sky halo around the bar, and a breathing screen edge while it thinks. */
+@property --voice-angle { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+.voice-halo {
+  background: conic-gradient(from var(--voice-angle), #3ecf7f, #a0dcff, #bff0d6, #f0b45a, #3ecf7f);
+  animation: voice-turn 6s linear infinite;
+}
+@keyframes voice-turn { to { --voice-angle: 360deg; } }
+.edge-breathe { animation: edge-breathe 1.6s ease-in-out infinite; }
+@keyframes edge-breathe { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .voice-halo, .edge-breathe { animation: none; } }
+/* The assistant's full stop while SEAL thinks. */
+@keyframes dot-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.55; transform: scale(0.82); } }
+.dot-pulse { animation: dot-pulse 1s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .dot-pulse { animation: none; } }

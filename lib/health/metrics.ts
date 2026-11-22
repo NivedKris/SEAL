@@ -1,4 +1,5 @@
 import "server-only";
+import { memo } from "@/lib/perf/memo";
 import type { Db } from "mongodb";
 import { AGENTS, type AgentName } from "@/config/models";
 import { COLLECTIONS as C, type AiCallDoc, type EvalRunDoc } from "@/lib/db/schemas";
@@ -19,7 +20,32 @@ const quantile = (xs: number[], q: number) => {
 // Pilot criteria from the pitch (plan §10).
 export const THRESHOLDS = { holdPrecision: 0.5, doctorAnswerRate: 0.6, fallbackRate: 0.1 };
 
+/** Drift: this week vs last (claims by creation; refusals by remittance date). Scans the whole
+ * remittance history for "new" refusal codes, so it is stored and refreshed every 10 minutes. */
+function driftMetrics(d: Db, now: number) {
+  return memo(d, "drift", 10 * 60_000, async () => {
+    const wk = (k: number) => [new Date(now - (k + 1) * 7 * DAY).toISOString(), new Date(now - k * 7 * DAY).toISOString()];
+    const mix = async (field: string, k: number) => {
+      const [a, b] = wk(k);
+      const rows = await d.collection(C.claims).aggregate([{ $match: { evalSet: false, createdAt: { $gte: a.replace("Z", "+00:00"), $lt: b.replace("Z", "+00:00") } } }, { $group: { _id: `$${field}`, n: { $sum: 1 } } }]).toArray();
+      return Object.fromEntries(rows.map((r) => [r._id, r.n as number]));
+    };
+    const reasons = async (k: number) => {
+      const [a, b] = wk(k);
+      const rows = await d.collection(C.remittances).aggregate([{ $match: { claimVersion: 1, readyAt: { $gte: a.replace("Z", "+00:00"), $lt: b.replace("Z", "+00:00") } } }, { $unwind: "$lines" }, { $match: { "lines.denialCode": { $exists: true } } }, { $group: { _id: { $substrCP: ["$lines.denialCode", 0, 4] }, n: { $sum: 1 } } }]).toArray();
+      return Object.fromEntries(rows.map((r) => [r._id, r.n as number]));
+    };
+    const [payerNow, payerLast, specNow, specLast, reasonNow, reasonLast] = await Promise.all([mix("payerId", 0), mix("payerId", 1), mix("providerId", 0), mix("providerId", 1), reasons(0), reasons(1)]);
+    const seen = new Set((await d.collection(C.remittances).distinct("lines.denialCode", { readyAt: { $lt: wk(0)[0].replace("Z", "+00:00") } })) as string[]);
+    const recent = (await d.collection(C.remittances).distinct("lines.denialCode", { readyAt: { $gte: wk(0)[0].replace("Z", "+00:00"), $lte: new Date(now).toISOString() } })) as string[];
+    return { payerMix: { thisWeek: payerNow, lastWeek: payerLast }, providerMix: { thisWeek: specNow, lastWeek: specLast }, refusalReasons: { thisWeek: reasonNow, lastWeek: reasonLast }, newDenialCodes: recent.filter((c) => c && !seen.has(c)) };
+  });
+}
+
 export async function healthMetrics(d: Db, now = Date.now()) {
+  const driftP = driftMetrics(d, now);
+  const liveP = d.collection(C.outcomes).find({ "writtenBy.id": "outcome-ledger", predictedProbability: { $ne: null } }, { projection: { predictedProbability: 1, firstPassRefused: 1 } }).toArray();
+  const learnedRulesP = d.collection(C.rules).countDocuments({ author: "rule-miner", active: true });
   const [calls, evalRuns, sets, judges, cycles, rulesActive, evts] = await Promise.all([
     d.collection(C.aiCalls).find({}, { projection: { _id: 1, agent: 1, provider: 1, model: 1, promptVersion: 1, tokensIn: 1, tokensOut: 1, cost: 1, latencyMs: 1, status: 1, fallbackUsed: 1, criticResult: 1, guardrailFlags: 1, maskingPassed: 1, subject: 1, at: 1 } }).toArray() as unknown as Promise<AiCallDoc[]>,
     d.collection(C.evalRuns).find({}).sort({ at: -1 }).limit(10).toArray() as unknown as Promise<EvalRunDoc[]>,
@@ -89,7 +115,7 @@ export async function healthMetrics(d: Db, now = Date.now()) {
 
   // ── Quality (evaluation set + live claims in the ledger) ──
   const latest = evalRuns[0] ?? null;
-  const live = await d.collection(C.outcomes).find({ "writtenBy.id": "outcome-ledger", predictedProbability: { $ne: null } }, { projection: { predictedProbability: 1, firstPassRefused: 1 } }).toArray();
+  const live = await liveP;
   const liveHeld = live.filter((o) => (o.predictedProbability as number) >= 0.5);
   const quality = {
     eval: latest && { at: latest.at, n: latest.n, holdPrecision: latest.precision, refusalRecall: latest.recall, auc: latest.auc, brier: latest.brier, firstPassBaseline: latest.firstPassBaseline, firstPassWithSeal: latest.firstPassWithSeal, judge: latest.judge },
@@ -97,22 +123,7 @@ export async function healthMetrics(d: Db, now = Date.now()) {
     history: evalRuns.map((r) => ({ at: r.at, precision: r.precision, recall: r.recall })).reverse(),
   };
 
-  // ── Drift: this week vs last (claims by creation; refusals by remittance date) ──
-  const wk = (k: number) => [new Date(now - (k + 1) * 7 * DAY).toISOString(), new Date(now - k * 7 * DAY).toISOString()];
-  const mix = async (field: string, k: number) => {
-    const [a, b] = wk(k);
-    const rows = await d.collection(C.claims).aggregate([{ $match: { evalSet: false, createdAt: { $gte: a.replace("Z", "+00:00"), $lt: b.replace("Z", "+00:00") } } }, { $group: { _id: `$${field}`, n: { $sum: 1 } } }]).toArray();
-    return Object.fromEntries(rows.map((r) => [r._id, r.n as number]));
-  };
-  const reasons = async (k: number) => {
-    const [a, b] = wk(k);
-    const rows = await d.collection(C.remittances).aggregate([{ $match: { claimVersion: 1, readyAt: { $gte: a.replace("Z", "+00:00"), $lt: b.replace("Z", "+00:00") } } }, { $unwind: "$lines" }, { $match: { "lines.denialCode": { $exists: true } } }, { $group: { _id: { $substrCP: ["$lines.denialCode", 0, 4] }, n: { $sum: 1 } } }]).toArray();
-    return Object.fromEntries(rows.map((r) => [r._id, r.n as number]));
-  };
-  const [payerNow, payerLast, specNow, specLast, reasonNow, reasonLast] = await Promise.all([mix("payerId", 0), mix("payerId", 1), mix("providerId", 0), mix("providerId", 1), reasons(0), reasons(1)]);
-  const seen = new Set((await d.collection(C.remittances).distinct("lines.denialCode", { readyAt: { $lt: wk(0)[0].replace("Z", "+00:00") } })) as string[]);
-  const recent = (await d.collection(C.remittances).distinct("lines.denialCode", { readyAt: { $gte: wk(0)[0].replace("Z", "+00:00"), $lte: new Date(now).toISOString() } })) as string[];
-  const drift = { payerMix: { thisWeek: payerNow, lastWeek: payerLast }, providerMix: { thisWeek: specNow, lastWeek: specLast }, refusalReasons: { thisWeek: reasonNow, lastWeek: reasonLast }, newDenialCodes: recent.filter((c) => c && !seen.has(c)) };
+  const drift = await driftP;
 
   // ── Versions ──
   const versions = { activeJudge: judges?.active ?? "agentic_llm", shadowJudge: judges?.shadow ?? null, promptVersions: [...new Set(calls.map((c) => c.promptVersion))].sort(), ruleSetVersion: RULE_SET_VERSION, activeRules: rulesActive, lastLearningCycle: cycles[0]?.at ?? null };
@@ -128,9 +139,12 @@ export async function healthMetrics(d: Db, now = Date.now()) {
 
   // Learning battery: finished claims (outcomes) not yet used by a learning cycle.
   const since = (cycles[0]?.at as string | undefined) ?? null;
-  const readyCases = await d.collection(C.outcomes).countDocuments(since ? { writtenAt: { $gt: since } } : {});
-  const learnedRules = await d.collection(C.rules).countDocuments({ author: "rule-miner", active: true });
-  const learning = { readyCases, since, learnedRules, refusedReady: await d.collection(C.outcomes).countDocuments({ ...(since ? { writtenAt: { $gt: since } } : {}), firstPassRefused: true }) };
+  const [readyCases, learnedRules, refusedReady] = await Promise.all([
+    d.collection(C.outcomes).countDocuments(since ? { writtenAt: { $gt: since } } : {}),
+    learnedRulesP,
+    d.collection(C.outcomes).countDocuments({ ...(since ? { writtenAt: { $gt: since } } : {}), firstPassRefused: true }),
+  ]);
+  const learning = { readyCases, since, learnedRules, refusedReady };
 
   return { computedAt: new Date(now).toISOString(), learning, calls: calls.length, operations, byProvider, costPerClaim: claimsWithCalls.size ? totalCost / claimsWithCalls.size : null, totalCost, safety, agreement, quality, calibration: latest?.calibration ?? [], calibrationByPayer: latest?.byPayer ?? {}, drift, versions, alerts, thresholds: THRESHOLDS };
 }

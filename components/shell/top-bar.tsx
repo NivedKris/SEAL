@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Banknote, BookCheck, ClipboardList, House, MessageCircleQuestion, Settings, Sparkles, Stethoscope } from "lucide-react";
 import { SealLogo } from "@/components/brand/seal-logo";
 import { APP_ROUTES, userFor } from "@/lib/routes";
+import { warmAllWhenIdle, warmPage } from "@/lib/client/page-data";
 import { cn } from "@/lib/utils";
 import { TENANTS, type TenantId } from "@/lib/tenant";
 import { ArrowLeftRight } from "lucide-react";
@@ -29,6 +30,10 @@ export function TopBar({ tenant = "basic" }: { tenant?: TenantId }) {
       localStorage.setItem("seal-lang", lang);
     } catch {}
   }, [lang]);
+  // Inside the app, warm every tab's data once the page is idle, so tab switches are instant.
+  useEffect(() => {
+    if (pathname !== "/" && pathname !== "/select") warmAllWhenIdle(pathname);
+  }, [pathname]);
   const me = userFor(pathname);
   // The landing is a full-screen film: just the wordmark and one way in, floating over the scene.
   if (pathname === "/" || pathname === "/select")
@@ -76,7 +81,7 @@ export function TopBar({ tenant = "basic" }: { tenant?: TenantId }) {
           {APP_ROUTES.map((r) => {
             const active = pathname === r.href || pathname.startsWith(r.href + "/");
             return (
-              <Link key={r.href} href={r.href} className={cn("whitespace-nowrap rounded-full px-3.5 py-1.5 font-light tracking-[0.01em] transition-all", active ? "bg-white/80 text-ink shadow-[0_0_0_1px_rgba(31,43,41,0.08),0_6px_20px_-8px_rgba(31,43,41,0.25)]" : "text-ink/60 hover:bg-white/50 hover:text-ink")}>
+              <Link key={r.href} href={r.href} onPointerEnter={() => warmPage(r.href)} onFocus={() => warmPage(r.href)} onTouchStart={() => warmPage(r.href)} className={cn("whitespace-nowrap rounded-full px-3.5 py-1.5 font-light tracking-[0.01em] transition-all", active ? "bg-white/80 text-ink shadow-[0_0_0_1px_rgba(31,43,41,0.08),0_6px_20px_-8px_rgba(31,43,41,0.25)]" : "text-ink/60 hover:bg-white/50 hover:text-ink")}>
                 {lang === "ar" ? r.labelAr : r.label}
               </Link>
             );
@@ -106,7 +111,7 @@ export function TopBar({ tenant = "basic" }: { tenant?: TenantId }) {
             const active = pathname === r.href || pathname.startsWith(r.href + "/");
             const Icon = TAB_ICON[r.href] ?? Sparkles;
             return (
-              <Link key={r.href} href={r.href} className={cn("flex flex-col items-center gap-1 py-2.5 text-[9.5px] font-light transition-colors", active ? "text-ink" : "text-ink/50")}>
+              <Link key={r.href} href={r.href} onPointerEnter={() => warmPage(r.href)} onFocus={() => warmPage(r.href)} onTouchStart={() => warmPage(r.href)} className={cn("flex flex-col items-center gap-1 py-2.5 text-[9.5px] font-light transition-colors", active ? "text-ink" : "text-ink/50")}>
                 <span className={cn("flex h-7 w-11 items-center justify-center rounded-full transition-colors", active && "bg-white/90 shadow-[0_0_0_1px_rgba(31,43,41,0.08)]")}>
                   <Icon className="size-[19px]" />
                 </span>
