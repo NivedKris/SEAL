@@ -1,9 +1,10 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Source_Serif_4, Geist_Mono, Noto_Sans_Arabic, Doto } from "next/font/google";
 import { TopBar } from "@/components/shell/top-bar";
 import { Splash } from "@/components/shell/splash";
 import { Assistant } from "@/components/assistant/assistant";
 import { currentTenant } from "@/lib/tenant-server";
+import { Install } from "@/components/pwa/install";
 import "./globals.css";
 
 const inter = Inter({ variable: "--font-sans", subsets: ["latin"] });
@@ -15,6 +16,15 @@ const arabic = Noto_Sans_Arabic({ variable: "--font-arabic", subsets: ["arabic"]
 export const metadata: Metadata = {
   title: { default: "SEAL", template: "%s · SEAL" },
   description: "SEAL catches insurance claim refusals at the point of care, at claim creation, and after a refusal comes back.",
+  applicationName: "SEAL",
+  appleWebApp: { capable: true, title: "SEAL", statusBarStyle: "default" },
+  icons: { apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }] },
+  formatDetection: { telephone: false },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#eef2f0",
+  viewportFit: "cover",
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -26,6 +36,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <TopBar tenant={tenant.id} />
         {children}
         <Assistant />
+        <Install />
       </body>
     </html>
   );

@@ -48,3 +48,4 @@ Thumbs.db
 # Real claims data (patient identifiers): never commit
 NEW APPOLLO.xlsx
 *.claims.xlsx
+/.next-prod/
